@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>EBE3BB8A-A7FF-4851-9661-D3136A6D1BA9</string>
+	<key>IDESourceControlProjectName</key>
+	<string>oculus</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>7B95E0A923C9A390C8806B55CAAF40BEFDA0C1AB</key>
+		<string>github.com:grrrwaaa/max_leap.git</string>
+		<key>9E5DB01E099DAF5C0DC315635AF68E41B4BCD000</key>
+		<string>github.com:grrrwaaa/max_oculus.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>src/oculus.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>7B95E0A923C9A390C8806B55CAAF40BEFDA0C1AB</key>
+		<string>../../..</string>
+		<key>9E5DB01E099DAF5C0DC315635AF68E41B4BCD000</key>
+		<string>../../../../max_oculus</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>github.com:grrrwaaa/max_leap.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>7B95E0A923C9A390C8806B55CAAF40BEFDA0C1AB</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>7B95E0A923C9A390C8806B55CAAF40BEFDA0C1AB</string>
+			<key>IDESourceControlWCCName</key>
+			<string>max_leap</string>
+		</dict>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>9E5DB01E099DAF5C0DC315635AF68E41B4BCD000</string>
+			<key>IDESourceControlWCCName</key>
+			<string>max_oculus</string>
+		</dict>
+	</array>
+</dict>
+</plist>

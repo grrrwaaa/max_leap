@@ -26,3 +26,14 @@
 *.exe
 *.out
 *.app
+
+*.pbxuser
+*.perspectivev3
+*.xccheckout
+*.xcuserdatad
+xcuserdata
+xcshareddata
+
+LeapSDK*
+
+.DS_Store

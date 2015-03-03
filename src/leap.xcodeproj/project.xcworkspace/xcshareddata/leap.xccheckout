@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>EB7B6849-6C9F-4AE9-9DF1-76C79635B929</string>
+	<key>IDESourceControlProjectName</key>
+	<string>leap</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>7B95E0A923C9A390C8806B55CAAF40BEFDA0C1AB</key>
+		<string>github.com:grrrwaaa/max_leap.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>src/leap.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>7B95E0A923C9A390C8806B55CAAF40BEFDA0C1AB</key>
+		<string>../../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>github.com:grrrwaaa/max_leap.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>7B95E0A923C9A390C8806B55CAAF40BEFDA0C1AB</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>7B95E0A923C9A390C8806B55CAAF40BEFDA0C1AB</string>
+			<key>IDESourceControlWCCName</key>
+			<string>max_leap</string>
+		</dict>
+	</array>
+</dict>
+</plist>

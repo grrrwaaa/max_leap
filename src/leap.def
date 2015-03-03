@@ -1,0 +1,4 @@
+LIBRARY leap.mxe
+
+EXPORTS
+	main
