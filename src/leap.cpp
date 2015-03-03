@@ -1030,10 +1030,10 @@ int C74_EXPORT main(void) {
 		}
 	}
 #endif
-	
+
 	common_symbols_init();
-    ps_frame_start = gensym("frame_start");
-    ps_frame_end = gensym("frame_end");
+	ps_frame_start = gensym("frame_start");
+	ps_frame_end = gensym("frame_end");
 	ps_frame = gensym("frame");
 	ps_hand = gensym("hand");
 	ps_finger = gensym("finger");
@@ -1042,46 +1042,42 @@ int C74_EXPORT main(void) {
 	ps_fps = gensym("fps");
 	ps_connected = gensym("connected");
 	ps_probability = gensym("probability");
-	
-    maxclass = class_new("leap", (method)leap_new, (method)leap_free, (long)sizeof(t_leap),
-                         0L, A_GIMME, 0);
-    
-    class_addmethod(maxclass, (method)leap_assist, "assist", A_CANT, 0);
+
+	maxclass = class_new("leap", (method)leap_new, (method)leap_free, (long)sizeof(t_leap), 0L, A_GIMME, 0);
+
+	class_addmethod(maxclass, (method)leap_assist, "assist", A_CANT, 0);
 	class_addmethod(maxclass, (method)leap_notify, "notify", A_CANT, 0);
-    
-    class_addmethod(maxclass, (method)leap_jit_matrix, "jit_matrix", A_SYM, 0);
-    class_addmethod(maxclass, (method)leap_bang, "bang", 0);
+
+	class_addmethod(maxclass, (method)leap_jit_matrix, "jit_matrix", A_SYM, 0);
+	class_addmethod(maxclass, (method)leap_bang, "bang", 0);
 	class_addmethod(maxclass, (method)leap_configure, "configure", 0);
-    
-	//CLASS_ATTR_FLOAT(maxclass, "predict", 0, t_leap, predict);
-	//
-	
+
 	CLASS_ATTR_SYM(maxclass, "config", 0, t_leap, config);
-	
+
 	CLASS_ATTR_LONG(maxclass, "unique", 0, t_leap, unique);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "unique", 0, "onoff", "unique: output only new frames");
-	
+
 	CLASS_ATTR_LONG(maxclass, "allframes", 0, t_leap, allframes);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "allframes", 0, "onoff", "allframes: output all frames between each bang");
-	
+
 	CLASS_ATTR_LONG(maxclass, "images", 0, t_leap, images);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "images", 0, "onoff", "images: output raw IR images from the sensor");
-	
+
 	CLASS_ATTR_LONG(maxclass, "hmd", 0, t_leap, hmd);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "hmd", 0, "onoff", "hmd: enable to optimize for head-mounted display (LeapVR)");
-	
+
 	CLASS_ATTR_LONG(maxclass, "background", 0, t_leap, background);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "background", 0, "onoff", "background: enable data capture when app has lost focus");
-	
+
 	CLASS_ATTR_LONG(maxclass, "motion_tracking", 0, t_leap, motion_tracking);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "motion_tracking", 0, "onoff", "motion_tracking: output estimated rotation/scale/translation between polls");
-	
+
 	CLASS_ATTR_LONG(maxclass, "serialize", 0, t_leap, serialize);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "serialize", 0, "onoff", "serialize: output serialized frames");
-	
+
 	CLASS_ATTR_LONG(maxclass, "aka", 0, t_leap, aka);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "aka", 0, "onoff", "aka: provide output compatible with aka.leapmotion");
-	
+
 	CLASS_ATTR_LONG(maxclass, "gesture_swipe", 0, t_leap, gesture_swipe);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "gesture_swipe", 0, "onoff", "gesture_swipe: recognize a long, linear movement of a finger");
 	CLASS_ATTR_LONG(maxclass, "gesture_circle", 0, t_leap, gesture_circle);
@@ -1090,12 +1086,12 @@ int C74_EXPORT main(void) {
 	CLASS_ATTR_STYLE_LABEL(maxclass, "gesture_screen_tap", 0, "onoff", "gesture_screen_tap: recognize a tapping movement by the finger as if tapping a vertical computer screen.");
 	CLASS_ATTR_LONG(maxclass, "gesture_key_tap", 0, t_leap, gesture_key_tap);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "gesture_key_tap", 0, "onoff", "gesture_key_tap: recognize a tapping movement by a finger as if tapping a keyboard key");
-	
+
 	CLASS_ATTR_LONG(maxclass, "gesture_any", 0, t_leap, gesture_any);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "gesture_any", 0, "onoff", "gesture_any: if enabled, all gestures are recognized.");
-	
-	
-    class_register(CLASS_BOX, maxclass); 
-    leap_class = maxclass;
-    return 0;
+
+
+	class_register(CLASS_BOX, maxclass); 
+	leap_class = maxclass;
+	return 0;
 }

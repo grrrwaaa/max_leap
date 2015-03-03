@@ -9,7 +9,7 @@
 			"modernui" : 1
 		}
 ,
-		"rect" : [ 697.0, 79.0, 664.0, 787.0 ],
+		"rect" : [ 656.0, 126.0, 611.0, 555.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 10.0,
@@ -37,6 +37,45 @@
 		"style" : "",
 		"subpatcher_template" : "",
 		"boxes" : [ 			{
+				"box" : 				{
+					"id" : "obj-20",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 2,
+					"outlettype" : [ "bang", "" ],
+					"patching_rect" : [ 21.0, 251.0, 101.0, 21.0 ],
+					"style" : "",
+					"text" : "jit.gl.render leap2"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-14",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 3,
+					"outlettype" : [ "bang", "", "erase" ],
+					"patching_rect" : [ 21.0, 208.5, 61.0, 21.0 ],
+					"style" : "",
+					"text" : "t b l erase"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-10",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 276.714294, 247.0, 49.0, 21.0 ],
+					"style" : "",
+					"text" : "r toleap"
+				}
+
+			}
+, 			{
 				"box" : 				{
 					"attr" : "gesture_any",
 					"id" : "obj-9",
@@ -93,6 +132,77 @@
 						"style" : "",
 						"subpatcher_template" : "",
 						"boxes" : [ 							{
+								"box" : 								{
+									"id" : "obj-11",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 458.0, 105.0, 53.0, 22.0 ],
+									"style" : "",
+									"text" : "s toleap"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-10",
+									"maxclass" : "newobj",
+									"numinlets" : 2,
+									"numoutlets" : 2,
+									"outlettype" : [ "", "" ],
+									"patching_rect" : [ 458.0, 79.0, 162.0, 22.0 ],
+									"style" : "",
+									"text" : "substitute t_dictionary config"
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"data" : 									{
+										"Gestures" : 										{
+											"Circle" : 											{
+												"MinRadius" : 5.0,
+												"MinArc" : 4.712389
+											}
+,
+											"Swipe" : 											{
+												"MinLength" : 150.0,
+												"MinVelocity" : 1000.0
+											}
+,
+											"KeyTap" : 											{
+												"MinDownVelocity" : 50.0,
+												"MinDistance" : 3.0,
+												"HistorySeconds" : 0.1
+											}
+,
+											"ScreenTap" : 											{
+												"MinForwardVelocity" : 50.0,
+												"MinDistance" : 3.0,
+												"HistorySeconds" : 0.1
+											}
+
+										}
+
+									}
+,
+									"id" : "obj-8",
+									"maxclass" : "newobj",
+									"numinlets" : 2,
+									"numoutlets" : 4,
+									"outlettype" : [ "dictionary", "", "", "" ],
+									"patching_rect" : [ 458.0, 51.0, 91.0, 22.0 ],
+									"saved_object_attributes" : 									{
+										"embed" : 1,
+										"parameter_enable" : 0
+									}
+,
+									"style" : "",
+									"text" : "dict @embed 1"
+								}
+
+							}
+, 							{
 								"box" : 								{
 									"id" : "obj-6",
 									"maxclass" : "comment",
@@ -225,13 +335,13 @@
 , 							{
 								"box" : 								{
 									"id" : "obj-9",
-									"linecount" : 4,
+									"linecount" : 2,
 									"maxclass" : "comment",
 									"numinlets" : 1,
 									"numoutlets" : 0,
-									"patching_rect" : [ 448.214294, 15.0, 346.0, 60.0 ],
+									"patching_rect" : [ 448.214294, 16.0, 346.0, 33.0 ],
 									"style" : "",
-									"text" : "@config <name>: refer to a named dict to copy gesture configuration data from. @see https://developer.leapmotion.com/documentation/cpp/api/Leap.Config.html#cppclass_leap_1_1_config"
+									"text" : "@config <name>: refer to a named dict to copy gesture configuration data from. E.g.:"
 								}
 
 							}
@@ -250,6 +360,15 @@
 							}
  ],
 						"lines" : [ 							{
+								"patchline" : 								{
+									"destination" : [ "obj-11", 0 ],
+									"disabled" : 0,
+									"hidden" : 0,
+									"source" : [ "obj-10", 0 ]
+								}
+
+							}
+, 							{
 								"patchline" : 								{
 									"destination" : [ "obj-21", 0 ],
 									"disabled" : 0,
@@ -294,6 +413,15 @@
 								}
 
 							}
+, 							{
+								"patchline" : 								{
+									"destination" : [ "obj-10", 0 ],
+									"disabled" : 0,
+									"hidden" : 0,
+									"source" : [ "obj-8", 0 ]
+								}
+
+							}
  ]
 					}
 ,
@@ -313,19 +441,6 @@
 			}
 , 			{
 				"box" : 				{
-					"id" : "obj-64",
-					"linecount" : 2,
-					"maxclass" : "comment",
-					"numinlets" : 1,
-					"numoutlets" : 0,
-					"patching_rect" : [ 458.214294, 408.0, 150.0, 31.0 ],
-					"style" : "",
-					"text" : "put all this stuff in a dict instead?"
-				}
-
-			}
-, 			{
-				"box" : 				{
 					"id" : "obj-62",
 					"maxclass" : "newobj",
 					"numinlets" : 1,
@@ -340,7 +455,7 @@
 							"modernui" : 1
 						}
 ,
-						"rect" : [ 91.0, 103.0, 640.0, 480.0 ],
+						"rect" : [ 541.0, 218.0, 642.0, 423.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -374,7 +489,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
-									"patching_rect" : [ 50.0, 72.0, 71.0, 22.0 ],
+									"patching_rect" : [ 20.0, 57.0, 71.0, 22.0 ],
 									"style" : "",
 									"text" : "route finger"
 								}
@@ -387,7 +502,7 @@
 									"numinlets" : 8,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
-									"patching_rect" : [ 173.0, 236.0, 109.0, 22.0 ],
+									"patching_rect" : [ 143.0, 302.0, 109.0, 22.0 ],
 									"style" : "",
 									"text" : "jit.gl.material leap2"
 								}
@@ -400,7 +515,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 2,
 									"outlettype" : [ "bang", "" ],
-									"patching_rect" : [ 50.0, 201.0, 30.0, 22.0 ],
+									"patching_rect" : [ 20.0, 267.0, 30.0, 22.0 ],
 									"style" : "",
 									"text" : "t b l"
 								}
@@ -413,7 +528,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 71.0, 236.0, 97.0, 22.0 ],
+									"patching_rect" : [ 41.0, 302.0, 97.0, 22.0 ],
 									"style" : "",
 									"text" : "prepend position"
 								}
@@ -426,7 +541,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 50.0, 165.0, 101.0, 22.0 ],
+									"patching_rect" : [ 20.0, 231.0, 101.0, 22.0 ],
 									"style" : "",
 									"text" : "vexpr $f1 * 0.001"
 								}
@@ -439,7 +554,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
-									"patching_rect" : [ 50.0, 133.0, 56.0, 22.0 ],
+									"patching_rect" : [ 20.0, 199.0, 56.0, 22.0 ],
 									"style" : "",
 									"text" : "zl slice 3"
 								}
@@ -452,7 +567,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
-									"patching_rect" : [ 50.0, 100.0, 56.0, 22.0 ],
+									"patching_rect" : [ 20.0, 166.0, 56.0, 22.0 ],
 									"style" : "",
 									"text" : "zl slice 3"
 								}
@@ -466,7 +581,7 @@
 									"numinlets" : 1,
 									"numoutlets" : 2,
 									"outlettype" : [ "jit_matrix", "" ],
-									"patching_rect" : [ 50.0, 267.0, 281.0, 35.0 ],
+									"patching_rect" : [ 20.0, 333.0, 281.0, 35.0 ],
 									"style" : "",
 									"text" : "jit.gl.gridshape leap2 @automatic 0 @color 0 0.5 0.8 @scale 0.02 0.02 0.02"
 								}
@@ -480,7 +595,7 @@
 									"numinlets" : 0,
 									"numoutlets" : 1,
 									"outlettype" : [ "" ],
-									"patching_rect" : [ 50.0, 30.0, 30.0, 30.0 ],
+									"patching_rect" : [ 20.0, 15.0, 30.0, 30.0 ],
 									"style" : ""
 								}
 
@@ -812,32 +927,6 @@
 			}
 , 			{
 				"box" : 				{
-					"id" : "obj-20",
-					"maxclass" : "newobj",
-					"numinlets" : 1,
-					"numoutlets" : 3,
-					"outlettype" : [ "bang", "bang", "erase" ],
-					"patching_rect" : [ 21.0, 215.0, 65.0, 21.0 ],
-					"style" : "",
-					"text" : "t b b erase"
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"id" : "obj-14",
-					"maxclass" : "newobj",
-					"numinlets" : 1,
-					"numoutlets" : 2,
-					"outlettype" : [ "bang", "" ],
-					"patching_rect" : [ 21.0, 251.0, 101.0, 21.0 ],
-					"style" : "",
-					"text" : "jit.gl.render leap2"
-				}
-
-			}
-, 			{
-				"box" : 				{
 					"id" : "obj-12",
 					"maxclass" : "newobj",
 					"numinlets" : 1,
@@ -871,7 +960,7 @@
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 1,
-					"outlettype" : [ "" ],
+					"outlettype" : [ "jit_matrix" ],
 					"patcher" : 					{
 						"fileversion" : 1,
 						"appversion" : 						{
@@ -882,7 +971,7 @@
 							"modernui" : 1
 						}
 ,
-						"rect" : [ 76.0, 101.0, 824.0, 397.0 ],
+						"rect" : [ 389.0, 450.0, 823.0, 397.0 ],
 						"bglocked" : 0,
 						"openinpresentation" : 0,
 						"default_fontsize" : 12.0,
@@ -910,6 +999,30 @@
 						"style" : "",
 						"subpatcher_template" : "",
 						"boxes" : [ 							{
+								"box" : 								{
+									"comment" : "",
+									"id" : "obj-2",
+									"maxclass" : "outlet",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 94.0, 335.0, 30.0, 30.0 ],
+									"style" : ""
+								}
+
+							}
+, 							{
+								"box" : 								{
+									"id" : "obj-23",
+									"maxclass" : "newobj",
+									"numinlets" : 1,
+									"numoutlets" : 0,
+									"patching_rect" : [ 31.0, 335.0, 53.0, 22.0 ],
+									"style" : "",
+									"text" : "s toleap"
+								}
+
+							}
+, 							{
 								"box" : 								{
 									"fontname" : "Arial Italic",
 									"id" : "obj-16",
@@ -1231,18 +1344,6 @@
 , 							{
 								"box" : 								{
 									"comment" : "",
-									"id" : "obj-2",
-									"maxclass" : "outlet",
-									"numinlets" : 1,
-									"numoutlets" : 0,
-									"patching_rect" : [ 31.0, 329.5, 30.0, 30.0 ],
-									"style" : ""
-								}
-
-							}
-, 							{
-								"box" : 								{
-									"comment" : "",
 									"id" : "obj-1",
 									"maxclass" : "inlet",
 									"numinlets" : 0,
@@ -1444,7 +1545,7 @@
 							}
 , 							{
 								"patchline" : 								{
-									"destination" : [ "obj-2", 0 ],
+									"destination" : [ "obj-23", 0 ],
 									"disabled" : 0,
 									"hidden" : 0,
 									"source" : [ "obj-5", 0 ]
@@ -1472,7 +1573,7 @@
  ]
 					}
 ,
-					"patching_rect" : [ 524.0, 251.0, 117.0, 21.0 ],
+					"patching_rect" : [ 477.0, 495.0, 117.0, 21.0 ],
 					"saved_object_attributes" : 					{
 						"description" : "",
 						"digest" : "",
@@ -3517,32 +3618,6 @@
 			}
 , 			{
 				"box" : 				{
-					"id" : "obj-23",
-					"linecount" : 5,
-					"maxclass" : "comment",
-					"numinlets" : 1,
-					"numoutlets" : 0,
-					"patching_rect" : [ 591.0, 59.0, 150.0, 67.0 ],
-					"style" : "",
-					"text" : "https://developer.leapmotion.com/documentation/javascript/supplements/Leap_JSON.html#json-tracking-data-format"
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"id" : "obj-13",
-					"linecount" : 3,
-					"maxclass" : "comment",
-					"numinlets" : 1,
-					"numoutlets" : 0,
-					"patching_rect" : [ 584.0, 27.0, 150.0, 43.0 ],
-					"style" : "",
-					"text" : "is there a way to mirror json format of webservice instead (e.g. as a dict)?"
-				}
-
-			}
-, 			{
-				"box" : 				{
 					"fontname" : "Verdana",
 					"fontsize" : 10.0,
 					"id" : "obj-33",
@@ -3655,7 +3730,7 @@
 					"destination" : [ "obj-15", 0 ],
 					"disabled" : 0,
 					"hidden" : 0,
-					"midpoints" : [ 275.5, 318.5, 650.5, 318.5, 650.5, 240.0, 533.5, 240.0 ],
+					"midpoints" : [ 275.5, 316.25, 486.5, 316.25 ],
 					"source" : [ "obj-1", 5 ]
 				}
 
@@ -3719,7 +3794,44 @@
 					"destination" : [ "obj-1", 0 ],
 					"disabled" : 0,
 					"hidden" : 0,
-					"midpoints" : [ 533.5, 279.25, 53.5, 279.25 ],
+					"midpoints" : [ 286.214294, 279.25, 53.5, 279.25 ],
+					"source" : [ "obj-10", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-1", 0 ],
+					"disabled" : 0,
+					"hidden" : 0,
+					"source" : [ "obj-14", 1 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-20", 0 ],
+					"disabled" : 0,
+					"hidden" : 0,
+					"source" : [ "obj-14", 2 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-20", 0 ],
+					"disabled" : 0,
+					"hidden" : 0,
+					"source" : [ "obj-14", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-14", 0 ],
+					"disabled" : 0,
+					"hidden" : 0,
+					"midpoints" : [ 486.5, 528.0, 5.0, 528.0, 5.0, 202.5, 30.5, 202.5 ],
 					"source" : [ "obj-15", 0 ]
 				}
 
@@ -3741,33 +3853,6 @@
 					"hidden" : 0,
 					"midpoints" : [ 264.214294, 278.5, 53.5, 278.5 ],
 					"source" : [ "obj-19", 0 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
-					"destination" : [ "obj-1", 0 ],
-					"disabled" : 0,
-					"hidden" : 0,
-					"source" : [ "obj-20", 1 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
-					"destination" : [ "obj-14", 0 ],
-					"disabled" : 0,
-					"hidden" : 0,
-					"source" : [ "obj-20", 2 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
-					"destination" : [ "obj-14", 0 ],
-					"disabled" : 0,
-					"hidden" : 0,
-					"source" : [ "obj-20", 0 ]
 				}
 
 			}
@@ -3875,7 +3960,7 @@
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-2", 0 ],
+					"destination" : [ "obj-14", 0 ],
 					"disabled" : 0,
 					"hidden" : 0,
 					"source" : [ "obj-8", 0 ]
@@ -3884,7 +3969,7 @@
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-20", 0 ],
+					"destination" : [ "obj-2", 0 ],
 					"disabled" : 0,
 					"hidden" : 0,
 					"source" : [ "obj-8", 0 ]
