@@ -99,12 +99,12 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>LeapSDK\win\LeapSDK\include;$(C74SUPPORT)\max-includes;$(C74SUPPORT)\jit-includes;$(C74SUPPORT)\msp-includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LeapSDK\include;$(C74SUPPORT)\max-includes;$(C74SUPPORT)\jit-includes;$(C74SUPPORT)\msp-includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN_VERSION;WIN32;_DEBUG;_WINDOWS;_USRDLL;WIN_EXT_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling />
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader />
@@ -133,8 +133,9 @@
       <DataExecutionPrevention />
       <ImportLibrary>$(IntDir)$(ProjectName).lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>LeapSDK\win\LeapSDK\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>MaxAPI.lib;MaxAudio.lib;jitlib.lib;libLeapd.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>LeapSDK\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>MaxAPI.lib;MaxAudio.lib;jitlib.lib;Delayimp.lib;Leap.lib</AdditionalDependencies>
+      <DelayLoadDLLs>Leap.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -184,7 +185,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>LeapSDK\win\LeapSDK\include;$(C74SUPPORT)\max-includes;$(C74SUPPORT)\jit-includes;$(C74SUPPORT)\msp-includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>LeapSDK\include;$(C74SUPPORT)\max-includes;$(C74SUPPORT)\jit-includes;$(C74SUPPORT)\msp-includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN_VERSION;WIN32;NDEBUG;_WINDOWS;_USRDLL;WIN_EXT_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling />
@@ -199,6 +200,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CompileAs>CompileAsCpp</CompileAs>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <OutputFile>$(OutDir)$(ProjectName).mxe</OutputFile>
@@ -217,8 +219,9 @@
       <DataExecutionPrevention />
       <ImportLibrary>$(IntDir)$(ProjectName).lib</ImportLibrary>
       <TargetMachine>MachineX86</TargetMachine>
-      <AdditionalLibraryDirectories>LeapSDK\win\LeapSDK\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>MaxAPI.lib;MaxAudio.lib;jitlib.lib;libLeap.lib;winmm.lib;Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>LeapSDK\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>MaxAPI.lib;MaxAudio.lib;jitlib.lib;Delayimp.lib;Leap.lib</AdditionalDependencies>
+      <DelayLoadDLLs>Leap.dll</DelayLoadDLLs>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

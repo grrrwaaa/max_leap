@@ -37,3 +37,7 @@ xcshareddata
 LeapSDK*
 
 .DS_Store
+*.ipch
+src/leap.opensdf
+*.sdf
+*.user

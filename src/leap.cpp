@@ -387,7 +387,7 @@ public:
 		//	frame.gestures().count() << std::endl;
 		// frame.interactionBox()
 		
-		outlet_anything(outlet_frame, ps_frame_end, 0, nil);
+		outlet_anything(outlet_frame, ps_frame_end, 0, NULL);
 	}
 	
 	// compatibilty with aka.leapmotion:
@@ -397,7 +397,7 @@ public:
 		int64_t frame_id = frame.id();
 		
         if(frame.isValid()) {
-			outlet_anything(outlet_frame, ps_frame_start, 0, nil);
+			outlet_anything(outlet_frame, ps_frame_start, 0, NULL);
 			
 			const Leap::HandList hands = frame.hands();
 			const size_t numHands = hands.count();
@@ -492,7 +492,7 @@ public:
 				atom_setfloat(ball_data+5, sphereRadius);
 				outlet_anything(outlet_frame, ps_ball, 6, ball_data);
 			}
-			outlet_anything(outlet_frame, ps_frame_end, 0, nil);
+			outlet_anything(outlet_frame, ps_frame_end, 0, NULL);
 		}
 	}
 	
@@ -729,7 +729,6 @@ void leap_free(t_leap *x) {
 void *leap_new(t_symbol *s, long argc, t_atom *argv)
 {
     t_leap *x = NULL;
-	
     if ((x = (t_leap *)object_alloc(leap_class))) {
 		// initialize in-place:
         x = new (x) t_leap();
@@ -739,18 +738,37 @@ void *leap_new(t_symbol *s, long argc, t_atom *argv)
     return (x);
 }
 
-//void leap_quit() {
-//}
-
 int C74_EXPORT main(void) {	
     t_class *maxclass;
-//	
-//	if (!ovr_Initialize()) {
-//		object_error(NULL, "LibOVR: failed to initialize library");
-//		return 0;
-//	}
-//	object_post(NULL, "initialized LibOVR %s", ovr_GetVersionString());
-//	quittask_install((method)leap_quit, NULL);
+
+#ifdef WIN_VERSION
+	// Rather annoyingly, leap don't provide static libraries, only a Leap.dll
+	// which should sit next to Max.exe -- not very user friendly for Max.
+	// So instead we delay load the library from next to the leap.mxe
+	{
+		char path[MAX_PATH];
+		char mxepath[MAX_PATH];
+		char dllpath[MAX_PATH];
+		const char * name = "Leap.dll";
+		// get leap.mxe as a HMODULE:
+		HMODULE hm = NULL;
+		if (!GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR) &leap_class, &hm)) {
+			error("critical error loading leap.mxe: GetModuleHandle returned %d\n", (int)GetLastError());
+			return 0;
+		}
+		// get its full path, the containing directory, and then munge the desired dllpath from it:
+		GetModuleFileNameA(hm, path, sizeof(path));
+		_splitpath(path, NULL, mxepath, NULL, NULL);
+		_snprintf(dllpath, MAX_PATH, "%s%s", mxepath, name);
+		// now try to load the dll:
+		hm = LoadLibrary(dllpath);
+		if (hm == NULL) {
+			error("failed to load %s at %s", name, dllpath);
+			post("please make sure that %s is located next to leap.mxe", name);
+			return 0;
+		}
+	}
+#endif
 	
 	common_symbols_init();
     ps_frame_start = gensym("frame_start");
@@ -772,7 +790,7 @@ int C74_EXPORT main(void) {
     
     class_addmethod(maxclass, (method)leap_jit_matrix, "jit_matrix", A_SYM, 0);
     class_addmethod(maxclass, (method)leap_bang, "bang", 0);
-	//class_addmethod(maxclass, (method)leap_configure, "configure", 0);
+	class_addmethod(maxclass, (method)leap_configure, "configure", 0);
     
 	//CLASS_ATTR_FLOAT(maxclass, "predict", 0, t_leap, predict);
 	//
