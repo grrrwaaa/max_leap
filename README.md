@@ -27,7 +27,8 @@ New project, many things may still change (including object name!)
 
 ## Notes on use
 
-- Windows: You need to have the Leap.dll sitting next to the leap.mxe.
+- You need to [install the LeapMotion v2 driver](https://www.leapmotion.com/setup)
+- Windows: You need to make sure the Leap.dll is always next to the leap.mxe.
 - Images: You need to enable "allow images" in the LeapMotion service for this to work.
  
 
