@@ -316,7 +316,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 348.714294, 489.0, 90.0, 19.0 ],
-					"presentation_rect" : [ 135.0, 606.0, 0.0, 0.0 ],
 					"style" : "",
 					"text" : "nearest hand ID"
 				}
@@ -329,7 +328,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 348.714294, 466.0, 90.0, 19.0 ],
-					"presentation_rect" : [ 135.0, 580.0, 0.0, 0.0 ],
 					"style" : "",
 					"text" : "no. hands"
 				}
@@ -342,7 +340,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 348.714294, 443.0, 90.0, 19.0 ],
-					"presentation_rect" : [ 135.0, 551.0, 0.0, 0.0 ],
 					"style" : "",
 					"text" : "timestamp"
 				}
@@ -369,7 +366,6 @@
 					"outlettype" : [ "", "bang" ],
 					"parameter_enable" : 0,
 					"patching_rect" : [ 254.714294, 489.0, 93.0, 21.0 ],
-					"presentation_rect" : [ 213.0, 524.0, 0.0, 0.0 ],
 					"style" : ""
 				}
 
@@ -383,7 +379,6 @@
 					"outlettype" : [ "", "bang" ],
 					"parameter_enable" : 0,
 					"patching_rect" : [ 254.714294, 466.0, 93.0, 21.0 ],
-					"presentation_rect" : [ 147.5, 521.0, 0.0, 0.0 ],
 					"style" : ""
 				}
 
@@ -397,7 +392,6 @@
 					"outlettype" : [ "", "bang" ],
 					"parameter_enable" : 0,
 					"patching_rect" : [ 254.714294, 443.0, 93.0, 21.0 ],
-					"presentation_rect" : [ 87.0, 524.0, 0.0, 0.0 ],
 					"style" : ""
 				}
 
@@ -435,7 +429,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 356.714294, 356.0, 68.0, 19.0 ],
-					"presentation_rect" : [ 356.714294, 357.5, 0.0, 0.0 ],
 					"style" : "",
 					"text" : "Sensor fps."
 				}
@@ -489,7 +482,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 406.714294, 183.5, 179.0, 31.0 ],
-					"presentation_rect" : [ 398.714294, 210.5, 0.0, 0.0 ],
 					"style" : "",
 					"text" : "request IR images (needs permission in the Leap settings)"
 				}
@@ -502,7 +494,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 406.714294, 160.5, 179.0, 19.0 ],
-					"presentation_rect" : [ 398.714294, 187.5, 0.0, 0.0 ],
 					"style" : "",
 					"text" : "optimize for HMD mounted use"
 				}
@@ -515,7 +506,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 406.714294, 137.5, 179.0, 19.0 ],
-					"presentation_rect" : [ 398.714294, 167.5, 0.0, 0.0 ],
 					"style" : "",
 					"text" : "run whether Max has focus"
 				}
@@ -528,7 +518,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 406.714294, 114.5, 179.0, 19.0 ],
-					"presentation_rect" : [ 398.714294, 142.5, 0.0, 0.0 ],
 					"style" : "",
 					"text" : "output all intermediate data"
 				}
@@ -541,7 +530,6 @@
 					"numinlets" : 1,
 					"numoutlets" : 0,
 					"patching_rect" : [ 406.714294, 91.5, 179.0, 19.0 ],
-					"presentation_rect" : [ 399.0, 114.0, 0.0, 0.0 ],
 					"style" : "",
 					"text" : "only output new data (throttle)"
 				}
@@ -655,7 +643,6 @@
 									"numinlets" : 1,
 									"numoutlets" : 0,
 									"patching_rect" : [ 585.0, 293.5, 212.0, 74.0 ],
-									"presentation_rect" : [ 574.0, 287.0, 0.0, 0.0 ],
 									"style" : "",
 									"text" : "Note that serialized frames do not include images; this must be handled separated (but could be done in the same way with jit.matrixset for example)"
 								}
@@ -2095,7 +2082,7 @@
 , 							{
 								"box" : 								{
 									"bordercolor" : [ 0.2, 0.2, 0.2, 1.0 ],
-									"cols" : 6,
+									"cols" : 1,
 									"colwidth" : 60,
 									"fontface" : 0,
 									"fontname" : "Arial",
@@ -2438,7 +2425,7 @@
 , 							{
 								"box" : 								{
 									"bordercolor" : [ 0.2, 0.2, 0.2, 1.0 ],
-									"cols" : 14,
+									"cols" : 1,
 									"colwidth" : 60,
 									"fontface" : 0,
 									"fontname" : "Arial",
@@ -2743,7 +2730,7 @@
 , 							{
 								"box" : 								{
 									"bordercolor" : [ 0.2, 0.2, 0.2, 1.0 ],
-									"cols" : 15,
+									"cols" : 1,
 									"colwidth" : 60,
 									"fontface" : 0,
 									"fontname" : "Arial",
@@ -2755,7 +2742,7 @@
 									"numoutlets" : 4,
 									"outlettype" : [ "list", "", "", "" ],
 									"patching_rect" : [ 43.0, 547.0, 900.0, 180.0 ],
-									"rows" : 5,
+									"rows" : 1,
 									"selmode" : 0,
 									"vscroll" : 0
 								}
@@ -2934,7 +2921,7 @@
 , 							{
 								"box" : 								{
 									"bordercolor" : [ 0.2, 0.2, 0.2, 1.0 ],
-									"cols" : 3,
+									"cols" : 1,
 									"colwidth" : 60,
 									"fontface" : 0,
 									"fontname" : "Arial",
@@ -2971,7 +2958,7 @@
 , 							{
 								"box" : 								{
 									"bordercolor" : [ 0.2, 0.2, 0.2, 1.0 ],
-									"cols" : 3,
+									"cols" : 1,
 									"colwidth" : 60,
 									"fontface" : 0,
 									"fontname" : "Arial",
