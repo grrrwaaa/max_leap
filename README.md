@@ -25,8 +25,8 @@ Work-in-progress:
 New project, many things may still change (including object name!)
 
 
-* You need to have the Leap.dll sitting next to the leap.mxe on Windows.
-** You need to enable "allow images" in the LeapMotion service for this to work.
+ * You need to have the Leap.dll sitting next to the leap.mxe on Windows.
+ ** You need to enable "allow images" in the LeapMotion service for this to work.
 
 There's also backwards-compatibility mode (@aka 1) that outputs the same data as aka.leapmotion. 
 
