@@ -11,8 +11,9 @@ Working:
 - Nearest hand ID
 - @unique, @allframes and @background to control when frames are processed
 - @hmd for the LeapVR optimization
+- Gesture recognition (circle, swipe, key & screen taps)
 - Frame serialization/deserialization (example via jit.matrixset)
-- Bakwards-compatibility with [aka.leapmotion] via @aka 1 
+- Backwards-compatibility with [aka.leapmotion] via @aka 1 
 
 Work-in-progress: 
 - Visualizer (wip)
@@ -20,7 +21,6 @@ Work-in-progress:
 - IR image warp/rectification for e.g. see-through AR (wip)
 - Motion tracking between frames (wip)
 - Grip / pinch (wip)
-- Gestures (wip)
 - Tools (wip) 
 
 New project, many things may still change (including object name!)

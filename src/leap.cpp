@@ -15,7 +15,7 @@ extern "C" {
 #endif
 #include "ext.h"
 #include "ext_obex.h"
-    
+#include "ext_dictobj.h"
 #include "jit.common.h"
 #include "jit.gl.h"
 #ifdef __cplusplus
@@ -37,7 +37,10 @@ static t_symbol * ps_fps;
 static t_symbol * ps_probability;
 
 class t_leap {
+public:
 	
+	// structure of the binary data for frame serialization/deserialization
+	// (needs a header with data length)
 	struct SerializedFrame {
 	public:
 		int32_t length;
@@ -46,28 +49,21 @@ class t_leap {
 
 	class LeapListener : public Leap::Listener {
 	public:
-	
 		t_leap * owner;
 		
-		virtual void onDeviceChange(const Leap::Controller &) {}
-		
-		virtual void onFocusGained(const Leap::Controller &) {}
-		virtual void onFocusLost(const Leap::Controller &) {}
-		
-		virtual void onServiceConnect(const Leap::Controller &) {}
-		virtual void onServiceDisconnect(const Leap::Controller &) {}
-	
-		virtual void onConnect(const Leap::Controller&) {
-			owner->configure();
-		}
-		
-		virtual void onDisconnect(const Leap::Controller &) {}
-		
 		// do nothing -- we're going to poll with bang() instead:
-		virtual void onFrame(const Leap::Controller&) {}
+//		virtual void onFrame(const Leap::Controller&) {}
+//		virtual void onDeviceChange(const Leap::Controller &) {}
+//		virtual void onFocusGained(const Leap::Controller &) {}
+//		virtual void onFocusLost(const Leap::Controller &) {}
+//		virtual void onServiceConnect(const Leap::Controller &) {}
+//		virtual void onServiceDisconnect(const Leap::Controller &) {}
+//		virtual void onDisconnect(const Leap::Controller &) {}
+	
+		// use this callback to set the policy flags
+		virtual void onConnect(const Leap::Controller&) { owner->configure(); }
 	};
 
-public:
     t_object	ob;			// the object itself (must be first)
     
 	int			unique;		// only output new data
@@ -79,8 +75,17 @@ public:
 	int			background;	// capture data even when Max has lost focus
 	int			aka;		// output in a form compatible with aka.leapmotion
 	
+	int			gesture_any;	// accept any gesture
+	int			gesture_swipe, gesture_circle, gesture_screen_tap, gesture_key_tap;	// enable specific gestures
+	
+	t_symbol *	config;
+	t_dictionary * config_dict;
+	t_symbol *	gesture_dict_name;
+	t_dictionary * gesture_dict;
+	
 	void *		outlet_frame;
 	void *		outlet_image[2];
+	void *		outlet_gesture;
 	void *		outlet_tracking;
 	void *		outlet_msg;
 	
@@ -95,8 +100,10 @@ public:
 	int64_t		lastFrameID;
 	
 	t_leap(int index = 0) {
+		
 		outlet_msg = outlet_new(&ob, 0);
 		outlet_tracking = outlet_new(&ob, 0);
+		outlet_gesture = outlet_new(&ob, 0);
 		outlet_image[0] = outlet_new(&ob, "jit_matrix");
 		outlet_image[1] = outlet_new(&ob, "jit_matrix");
         outlet_frame = outlet_new(&ob, 0);
@@ -111,6 +118,19 @@ public:
 		hmd = 0;
 		background = 1;
 		
+		gesture_any = 0;
+		gesture_swipe = 0;
+		gesture_circle = 0;
+		gesture_screen_tap = 0;
+		gesture_key_tap = 0;
+		
+		config = jit_symbol_unique();
+		config_dict = dictionary_new();
+		gesture_dict_name = jit_symbol_unique();
+		gesture_dict = dictobj_register(dictionary_new(), &gesture_dict_name);
+		
+		
+		// create jit.matrix for the output images:
 		image_width = 640;
 		image_height = 240;
 		for (int i=0; i<2; i++) {
@@ -129,6 +149,8 @@ public:
 		for (int i=0; i<2; i++) {
 			object_release((t_object *)image_wrappers[i]);
 		}
+		object_release((t_object *)config_dict);
+		object_release((t_object *)gesture_dict);
     }
 	
 	void * configureMatrix2D(void * mat_wrapper, long planecount, t_symbol * type, long w, long h) {
@@ -150,13 +172,70 @@ public:
 		if (images)		flag |= Leap::Controller::POLICY_IMAGES;
 		if (hmd)		flag |= Leap::Controller::POLICY_OPTIMIZE_HMD;
 		if (background) flag |= Leap::Controller::POLICY_BACKGROUND_FRAMES;
-		
 		controller.setPolicyFlags((Leap::Controller::PolicyFlag)flag);
 		
-		// set connected status:
-		//outlet_anything(owner->outlet_frame, ps_connected, 1, );
+		controller.enableGesture(Leap::Gesture::TYPE_SWIPE, (gesture_any || gesture_swipe));
+		controller.enableGesture(Leap::Gesture::TYPE_CIRCLE, (gesture_any || gesture_circle));
+		controller.enableGesture(Leap::Gesture::TYPE_SCREEN_TAP, (gesture_any || gesture_screen_tap));
+		controller.enableGesture(Leap::Gesture::TYPE_KEY_TAP, (gesture_any || gesture_key_tap));
 		
-		// controller.enableGesture(Gesture::TYPE_SWIPE);
+		// https://developer.leapmotion.com/documentation/cpp/api/Leap.Config.html#cppclass_leap_1_1_config
+		if (dictionary_hasentry(config_dict, gensym("Gesture"))) {
+			t_dictionary * gesture_dict = 0;
+			dictionary_getdictionary(config_dict, gensym("Gesture"), (t_object **)&gesture_dict);
+			double f;
+			
+			if (dictionary_hasentry(config_dict, gensym("Circle"))) {
+				t_dictionary * sub_dict = 0;
+				dictionary_getdictionary(config_dict, gensym("Circle"), (t_object **)&sub_dict);
+				if (dictionary_getfloat(sub_dict, gensym("MinRadius"), &f) == 0) {
+					controller.config().setFloat("Gesture.Circle.MinRadius", f);
+				}
+				if (dictionary_getfloat(sub_dict, gensym("MinArc"), &f) == 0) {
+					controller.config().setFloat("Gesture.Circle.MinArc", f);
+				}
+			}
+			
+			if (dictionary_hasentry(config_dict, gensym("Swipe"))) {
+				t_dictionary * sub_dict = 0;
+				dictionary_getdictionary(config_dict, gensym("Swipe"), (t_object **)&sub_dict);
+				if (dictionary_getfloat(sub_dict, gensym("MinLength"), &f) == 0) {
+					controller.config().setFloat("Gesture.Swipe.MinLength", f);
+				}
+				if (dictionary_getfloat(sub_dict, gensym("MinVelocity"), &f) == 0) {
+					controller.config().setFloat("Gesture.Swipe.MinVelocity", f);
+				}
+			}
+			
+			if (dictionary_hasentry(config_dict, gensym("ScreenTap"))) {
+				t_dictionary * sub_dict = 0;
+				dictionary_getdictionary(config_dict, gensym("ScreenTap"), (t_object **)&sub_dict);
+				if (dictionary_getfloat(sub_dict, gensym("HistorySeconds"), &f) == 0) {
+					controller.config().setFloat("Gesture.ScreenTap.HistorySeconds", f);
+				}
+				if (dictionary_getfloat(sub_dict, gensym("MinDistance"), &f) == 0) {
+					controller.config().setFloat("Gesture.ScreenTap.MinDistance", f);
+				}
+				if (dictionary_getfloat(sub_dict, gensym("MinForwardVelocity"), &f) == 0) {
+					controller.config().setFloat("Gesture.ScreenTap.MinForwardVelocity", f);
+				}
+			}
+			
+			if (dictionary_hasentry(config_dict, gensym("KeyTap"))) {
+				t_dictionary * sub_dict = 0;
+				dictionary_getdictionary(config_dict, gensym("KeyTap"), (t_object **)&sub_dict);
+				if (dictionary_getfloat(sub_dict, gensym("HistorySeconds"), &f) == 0) {
+					controller.config().setFloat("Gesture.KeyTap.HistorySeconds", f);
+				}
+				if (dictionary_getfloat(sub_dict, gensym("MinDistance"), &f) == 0) {
+					controller.config().setFloat("Gesture.KeyTap.MinDistance", f);
+				}
+				if (dictionary_getfloat(sub_dict, gensym("MinDownVelocity"), &f) == 0) {
+					controller.config().setFloat("Gesture.KeyTap.MinDownVelocity", f);
+				}
+			}
+			controller.config().save();
+		}
     }
 	
 	void serializeAndOutput(const Leap::Frame& frame) {
@@ -203,7 +282,7 @@ public:
 	void processNextFrame(const Leap::Frame& frame, int serialize=0) {
 		if (!frame.isValid()) return;
 		
-		t_atom a[1];
+		t_atom a[2];
 		
 		// serialize:
 		if (serialize) serializeAndOutput(frame);
@@ -384,7 +463,6 @@ public:
 		}
 		
 		//	frame.tools().count()
-		//	frame.gestures().count() << std::endl;
 		// frame.interactionBox()
 		
 		outlet_anything(outlet_frame, ps_frame_end, 0, NULL);
@@ -548,6 +626,152 @@ public:
 		}
 	}
 	
+	void processGestures(const Leap::Frame& frame) {
+		const Leap::GestureList& gestures = frame.gestures(lastFrame);
+		for(Leap::GestureList::const_iterator gl = gestures.begin(); gl != gestures.end(); gl++) {
+			if ((*gl).isValid()) {
+				dictionary_clear(gesture_dict);
+				
+				t_atom a[2];
+				atom_setsym(a, _sym_dictionary);
+				atom_setsym(a+1, gesture_dict_name);
+				
+				switch ((*gl).state()) {
+					case Leap::Gesture::STATE_START:
+						dictionary_appendsym(gesture_dict, gensym("state"), gensym("start"));
+						break;
+					case Leap::Gesture::STATE_UPDATE:
+						dictionary_appendsym(gesture_dict, gensym("state"), gensym("update"));
+						break;
+					case Leap::Gesture::STATE_STOP:
+						dictionary_appendsym(gesture_dict, gensym("state"), gensym("stop"));
+						break;
+					default:
+						break;
+				}
+				
+				t_atom avec[3];
+				
+				switch ((*gl).type()) {
+					case Leap::Gesture::TYPE_SWIPE: {
+						dictionary_appendsym(gesture_dict, gensym("type"), gensym("swipe"));
+						const Leap::SwipeGesture& g = *(gl);
+						
+						dictionary_appendlong(gesture_dict, _sym_id, g.id());
+						
+						Leap::Vector position = g.position();
+						atom_setfloat(avec, position.x);
+						atom_setfloat(avec+1, position.y);
+						atom_setfloat(avec+2, position.z);
+						dictionary_appendatoms(gesture_dict, _jit_sym_position, 3, avec);
+						
+						Leap::Vector direction = g.direction();
+						atom_setfloat(avec, direction.x);
+						atom_setfloat(avec+1, direction.y);
+						atom_setfloat(avec+2, direction.z);
+						dictionary_appendatoms(gesture_dict, _jit_sym_direction, 3, avec);
+						
+						Leap::HandList hands = g.hands();
+						if (hands.count()) dictionary_appendlong(gesture_dict, gensym("hand"), (*hands.begin()).id());
+						dictionary_appendlong(gesture_dict, gensym("pointable"), g.pointable().id());
+						
+						position = g.startPosition();
+						atom_setfloat(avec, position.x);
+						atom_setfloat(avec+1, position.y);
+						atom_setfloat(avec+2, position.z);
+						dictionary_appendatoms(gesture_dict, gensym("startPosition"), 3, avec);
+						dictionary_appendfloat(gesture_dict, gensym("duration"), g.durationSeconds());
+						dictionary_appendfloat(gesture_dict, gensym("speed"), g.speed());
+						
+						outlet_anything(outlet_gesture, gensym("swipe"), 2, a);
+						
+					} break;
+					case Leap::Gesture::TYPE_CIRCLE: {
+						dictionary_appendsym(gesture_dict, gensym("type"), gensym("circle"));
+						const Leap::CircleGesture& g = *(gl);
+						
+						dictionary_appendlong(gesture_dict, _sym_id, g.id());
+						
+						Leap::Vector position = g.center();
+						atom_setfloat(avec, position.x);
+						atom_setfloat(avec+1, position.y);
+						atom_setfloat(avec+2, position.z);
+						dictionary_appendatoms(gesture_dict, gensym("center"), 3, avec);
+						
+						position = g.normal();
+						atom_setfloat(avec, position.x);
+						atom_setfloat(avec+1, position.y);
+						atom_setfloat(avec+2, position.z);
+						dictionary_appendatoms(gesture_dict, gensym("normal"), 3, avec);
+						
+						Leap::HandList hands = g.hands();
+						if (hands.count()) dictionary_appendlong(gesture_dict, gensym("hand"), (*hands.begin()).id());
+						dictionary_appendlong(gesture_dict, gensym("pointable"), g.pointable().id());
+						dictionary_appendfloat(gesture_dict, gensym("duration"), g.durationSeconds());
+						dictionary_appendfloat(gesture_dict, gensym("progress"), g.progress());
+						dictionary_appendfloat(gesture_dict, gensym("radius"), g.radius());
+						
+						outlet_anything(outlet_gesture, gensym("circle"), 2, a);
+						
+					} break;
+					case Leap::Gesture::TYPE_KEY_TAP: {
+						dictionary_appendsym(gesture_dict, gensym("type"), gensym("key_tap"));
+						const Leap::KeyTapGesture& g = *(gl);
+						
+						dictionary_appendlong(gesture_dict, _sym_id, g.id());
+						
+						Leap::Vector position = g.position();
+						atom_setfloat(avec, position.x);
+						atom_setfloat(avec+1, position.y);
+						atom_setfloat(avec+2, position.z);
+						dictionary_appendatoms(gesture_dict, _jit_sym_position, 3, avec);
+						
+						position = g.direction();
+						atom_setfloat(avec, position.x);
+						atom_setfloat(avec+1, position.y);
+						atom_setfloat(avec+2, position.z);
+						dictionary_appendatoms(gesture_dict, gensym("direction"), 3, avec);
+						
+						Leap::HandList hands = g.hands();
+						if (hands.count()) dictionary_appendlong(gesture_dict, gensym("hand"), (*hands.begin()).id());
+						dictionary_appendlong(gesture_dict, gensym("pointable"), g.pointable().id());
+						dictionary_appendfloat(gesture_dict, gensym("duration"), g.durationSeconds());
+						
+						outlet_anything(outlet_gesture, gensym("key_tap"), 2, a);
+					} break;
+					case Leap::Gesture::TYPE_SCREEN_TAP: {
+						dictionary_appendsym(gesture_dict, gensym("type"), gensym("screen_tap"));
+						const Leap::ScreenTapGesture& g = *(gl);
+						
+						dictionary_appendlong(gesture_dict, _sym_id, g.id());
+						
+						Leap::Vector position = g.position();
+						atom_setfloat(avec, position.x);
+						atom_setfloat(avec+1, position.y);
+						atom_setfloat(avec+2, position.z);
+						dictionary_appendatoms(gesture_dict, _jit_sym_position, 3, avec);
+						
+						position = g.direction();
+						atom_setfloat(avec, position.x);
+						atom_setfloat(avec+1, position.y);
+						atom_setfloat(avec+2, position.z);
+						dictionary_appendatoms(gesture_dict, gensym("direction"), 3, avec);
+						
+						Leap::HandList hands = g.hands();
+						if (hands.count()) dictionary_appendlong(gesture_dict, gensym("hand"), (*hands.begin()).id());
+						dictionary_appendlong(gesture_dict, gensym("pointable"), g.pointable().id());
+						dictionary_appendfloat(gesture_dict, gensym("duration"), g.durationSeconds());
+						
+						outlet_anything(outlet_gesture, gensym("screen_tap"), 2, a);
+					} break;
+					default: {
+						//Handle unrecognized gestures?
+					} break;
+				}
+			}
+		}
+	}
+	
     void bang() {
 		t_atom a[1];
 		atom_setlong(a, controller.isConnected());
@@ -565,6 +789,7 @@ public:
 			if (allframes) {
 				// output all pending frames:
 				for (int history = 0; history < currentID - lastFrameID; history++) {
+					// important that we re-use the frame variable here:
 					frame = controller.frame(history);
 					if (images) {
 						// get most recent images:
@@ -588,9 +813,12 @@ public:
 					processNextFrame(frame, serialize);
 				}
 			}
-			lastFrameID = currentID;
 		}
+		
+		processGestures(frame);
+		
 		lastFrame = frame;
+		lastFrameID = currentID;
     }
 	
 	void jit_matrix(t_symbol * name) {
@@ -647,6 +875,18 @@ public:
 			jit_error_code(&ob, err);
 		}
 	}
+	
+	t_jit_err dictionary(t_symbol *s) {
+		t_dictionary *d = dictobj_findregistered_retain(s);
+		if (d) {
+			dictionary_clone_to_existing(d,config_dict);
+		} else {
+			object_error(&ob, "unable to reference dictionary named %s", s->s_name);
+			return JIT_ERR_GENERIC;
+		}
+		dictobj_release(d);
+		return JIT_ERR_NONE;
+	}
 };
 
 //t_max_err leap_notify(t_leap *x, t_symbol *s, t_symbol *msg, void *sender, void *data) {
@@ -676,18 +916,6 @@ void leap_configure(t_leap *x) {
     defer_low(x, (method)leap_doconfigure, 0, 0, 0);
 }
 
-t_max_err leap_images_set(t_leap *x, t_object *attr, long argc, t_atom *argv) {
-    x->images = atom_getlong(argv);
-    leap_configure(x);
-    return 0;
-}
-
-t_max_err leap_hmd_set(t_leap *x, t_object *attr, long argc, t_atom *argv) {
-	x->hmd = atom_getlong(argv);
-	leap_configure(x);
-	return 0;
-}
-
 void leap_assist(t_leap *x, void *b, long m, long a, char *s)
 {
     if (m == ASSIST_INLET) { // inlet
@@ -704,7 +932,9 @@ void leap_assist(t_leap *x, void *b, long m, long a, char *s)
         } else if (a == 2) {
             sprintf(s, "image (right)");
         } else if (a == 3) {
-            sprintf(s, "motion tracking data (messages)");
+			sprintf(s, "recognized gestures (messages)");
+		} else if (a == 4) {
+			sprintf(s, "motion tracking data (messages)");
 //        } else if (a == 4) {
 //            sprintf(s, "HMD left eye mesh (jit_matrix)");
 //        } else if (a == 5) {
@@ -720,8 +950,34 @@ void leap_assist(t_leap *x, void *b, long m, long a, char *s)
     }
 }
 
+t_max_err leap_notify(t_leap *x, t_symbol *s, t_symbol *msg, void *sender, void *data) {
+	t_symbol *attrname;
+	if (msg == gensym("attr_modified")) {       // check notification type
+		attrname = (t_symbol *)object_method((t_object *)data, gensym("getname"));
+		
+		// certain attributes require a reconfigure:
+		if (attrname == gensym("hmd") ||
+			attrname == gensym("background") ||
+			attrname == gensym("config") ||
+			attrname == gensym("images") ||
+			attrname == gensym("gesture_swipe") ||
+			attrname == gensym("gesture_circle") ||
+			attrname == gensym("gesture_key_tap") ||
+			attrname == gensym("gesture_screen_tap") ||
+			attrname == gensym("gesture_any")) {
+			x->configure();
+		}
+		
+		//object_post((t_object *)x, "changed attr name is %s",attrname->s_name);
+	} else {
+		//object_post((t_object *)x, "notify %s (self %d)", msg->s_name, sender == x);
+	}
+	return 0;
+}
+
 
 void leap_free(t_leap *x) {
+	object_unregister(x);
     x->~t_leap();
     max_jit_object_free(x);
 }
@@ -732,6 +988,11 @@ void *leap_new(t_symbol *s, long argc, t_atom *argv)
     if ((x = (t_leap *)object_alloc(leap_class))) {
 		// initialize in-place:
         x = new (x) t_leap();
+		
+		// register, in order to receive notifications from oneself:
+		object_register(gensym("leap"), jit_symbol_unique(), x);
+		object_attach_byptr(x, x);
+		
         // apply attrs:
         attr_args_process(x, argc, argv);
     }
@@ -786,7 +1047,7 @@ int C74_EXPORT main(void) {
                          0L, A_GIMME, 0);
     
     class_addmethod(maxclass, (method)leap_assist, "assist", A_CANT, 0);
-	// class_addmethod(maxclass, (method)leap_notify, "notify", A_CANT, 0);
+	class_addmethod(maxclass, (method)leap_notify, "notify", A_CANT, 0);
     
     class_addmethod(maxclass, (method)leap_jit_matrix, "jit_matrix", A_SYM, 0);
     class_addmethod(maxclass, (method)leap_bang, "bang", 0);
@@ -794,6 +1055,8 @@ int C74_EXPORT main(void) {
     
 	//CLASS_ATTR_FLOAT(maxclass, "predict", 0, t_leap, predict);
 	//
+	
+	CLASS_ATTR_SYM(maxclass, "config", 0, t_leap, config);
 	
 	CLASS_ATTR_LONG(maxclass, "unique", 0, t_leap, unique);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "unique", 0, "onoff", "unique: output only new frames");
@@ -803,15 +1066,12 @@ int C74_EXPORT main(void) {
 	
 	CLASS_ATTR_LONG(maxclass, "images", 0, t_leap, images);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "images", 0, "onoff", "images: output raw IR images from the sensor");
-	CLASS_ATTR_ACCESSORS(maxclass, "images", NULL, leap_images_set);
 	
 	CLASS_ATTR_LONG(maxclass, "hmd", 0, t_leap, hmd);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "hmd", 0, "onoff", "hmd: enable to optimize for head-mounted display (LeapVR)");
-	CLASS_ATTR_ACCESSORS(maxclass, "hmd", NULL, leap_hmd_set);
 	
 	CLASS_ATTR_LONG(maxclass, "background", 0, t_leap, background);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "background", 0, "onoff", "background: enable data capture when app has lost focus");
-	CLASS_ATTR_ACCESSORS(maxclass, "background", NULL, leap_hmd_set);
 	
 	CLASS_ATTR_LONG(maxclass, "motion_tracking", 0, t_leap, motion_tracking);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "motion_tracking", 0, "onoff", "motion_tracking: output estimated rotation/scale/translation between polls");
@@ -821,6 +1081,19 @@ int C74_EXPORT main(void) {
 	
 	CLASS_ATTR_LONG(maxclass, "aka", 0, t_leap, aka);
 	CLASS_ATTR_STYLE_LABEL(maxclass, "aka", 0, "onoff", "aka: provide output compatible with aka.leapmotion");
+	
+	CLASS_ATTR_LONG(maxclass, "gesture_swipe", 0, t_leap, gesture_swipe);
+	CLASS_ATTR_STYLE_LABEL(maxclass, "gesture_swipe", 0, "onoff", "gesture_swipe: recognize a long, linear movement of a finger");
+	CLASS_ATTR_LONG(maxclass, "gesture_circle", 0, t_leap, gesture_circle);
+	CLASS_ATTR_STYLE_LABEL(maxclass, "gesture_circle", 0, "onoff", "gesture_circle: recognize a single finger tracing a circle");
+	CLASS_ATTR_LONG(maxclass, "gesture_screen_tap", 0, t_leap, gesture_screen_tap);
+	CLASS_ATTR_STYLE_LABEL(maxclass, "gesture_screen_tap", 0, "onoff", "gesture_screen_tap: recognize a tapping movement by the finger as if tapping a vertical computer screen.");
+	CLASS_ATTR_LONG(maxclass, "gesture_key_tap", 0, t_leap, gesture_key_tap);
+	CLASS_ATTR_STYLE_LABEL(maxclass, "gesture_key_tap", 0, "onoff", "gesture_key_tap: recognize a tapping movement by a finger as if tapping a keyboard key");
+	
+	CLASS_ATTR_LONG(maxclass, "gesture_any", 0, t_leap, gesture_any);
+	CLASS_ATTR_STYLE_LABEL(maxclass, "gesture_any", 0, "onoff", "gesture_any: if enabled, all gestures are recognized.");
+	
 	
     class_register(CLASS_BOX, maxclass); 
     leap_class = maxclass;
