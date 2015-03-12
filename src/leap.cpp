@@ -2,9 +2,9 @@
 	@file
 	leap - a max object
  
-	Inspired by and derived from https://github.com/akamatsu/aka.leapmotion/ (http://akamatsu.org/aka/max/objects/) (Masayuki Akamatsu), which is shared under Creative Commons Attribution 3.0 Unported License.
+	Inspired by and partially derived from https://github.com/akamatsu/aka.leapmotion/ (http://akamatsu.org/aka/max/objects/) (Masayuki Akamatsu), which is shared under Creative Commons Attribution 3.0 Unported License.
  
-	Updated to V2 SDK and slightly extended by Graham Wakefield, 2015
+	Updated to V2 SDK and extended by Graham Wakefield, 2015
  
  */
 
@@ -129,6 +129,9 @@ public:
 	t_dictionary * config_dict;
 	t_symbol *	gesture_dict_name;
 	t_dictionary * gesture_dict;
+	
+	t_symbol * frame_dict_name;
+	t_dictionary * frame_dict;
 	t_symbol *	hand_dict_name;
 	t_dictionary * hand_dict;
 	t_dictionary * arm_dict;
@@ -153,6 +156,9 @@ public:
 	LeapListener listener;
 	Leap::Frame lastFrame;
 	int64_t		lastFrameID;
+	
+	// the last-received frame:
+	Leap::Frame frame;
 	
 	t_leap(int index = 0) {
 		
@@ -185,6 +191,10 @@ public:
 		config_dict = dictionary_new();
 		gesture_dict_name = jit_symbol_unique();
 		gesture_dict = dictobj_register(dictionary_new(), &gesture_dict_name);
+		
+		frame_dict_name = jit_symbol_unique();
+		frame_dict = dictobj_register(dictionary_new(), &frame_dict_name);
+		
 		
 		hand_dict_name = jit_symbol_unique();
 		hand_dict = dictobj_register(dictionary_new(), &hand_dict_name);
@@ -379,8 +389,349 @@ public:
 		}
 	}
 	
+	t_dictionary * processBone(const Leap::Bone& bone, bool isRight, int idx, t_symbol * name) {
+		Quaternion q;
+		Leap::Vector vec;
+		t_atom avec[4];
+		t_dictionary * bone_dict = dictionary_new();
+		dictionary_appendsym(bone_dict, _sym_name, name);
+		dictionary_appendlong(bone_dict, gensym("valid"), bone.isValid());
+		dictionary_appendlong(bone_dict, _sym_type, (int)bone.type());
+		
+		dictionary_appendfloat(bone_dict, gensym("length"), bone.length() * 0.001);
+		dictionary_appendfloat(bone_dict, gensym("width"), bone.width() * 0.001);
+
+		q.fromBasis(bone.basis(), isRight);	// or basis.rigidInverse?
+		dictionary_appendatoms(bone_dict, gensym("quat"), 4, q.atoms);
+
+		vec = bone.center();
+		atom_setfloat(avec+0, vec.x * 0.001);
+		atom_setfloat(avec+1, vec.y * 0.001);
+		atom_setfloat(avec+2, vec.z * 0.001);
+		dictionary_appendatoms(bone_dict, gensym("center"), 3, avec);
+		vec = bone.nextJoint();
+		atom_setfloat(avec+0, vec.x * 0.001);
+		atom_setfloat(avec+1, vec.y * 0.001);
+		atom_setfloat(avec+2, vec.z * 0.001);
+		dictionary_appendatoms(bone_dict, gensym("nextJoint"), 3, avec);
+		vec = bone.prevJoint();
+		atom_setfloat(avec+0, vec.x * 0.001);
+		atom_setfloat(avec+1, vec.y * 0.001);
+		atom_setfloat(avec+2, vec.z * 0.001);
+		dictionary_appendatoms(bone_dict, gensym("prevJoint"), 3, avec);
+		vec = bone.direction();
+		atom_setfloat(avec+0, vec.x);
+		atom_setfloat(avec+1, vec.y);
+		atom_setfloat(avec+2, vec.z);
+		dictionary_appendatoms(bone_dict, gensym("direction"), 3, avec);
+
+		return bone_dict;
+	}
+	
+	t_dictionary * processFinger(const Leap::Finger& finger, bool isRight, int idx, t_symbol * name) {
+		Quaternion q;
+		Leap::Vector vec;
+		t_atom avec[4];
+		t_dictionary * finger_dict = dictionary_new();
+		bool isValid = finger.isValid();
+		
+		dictionary_appendlong(finger_dict, gensym("valid"), isValid);
+		const int32_t id = finger.id();
+		dictionary_appendlong(finger_dict, _sym_id, id);
+		dictionary_appendsym(finger_dict, _sym_type, name);
+		//dictionary_appendlong(finger_dict, gensym("frame"), frame_id);
+		//dictionary_appendlong(finger_dict, gensym("hand"), hand_id);
+		dictionary_appendfloat(finger_dict, gensym("timeVisible"), finger.timeVisible());
+		dictionary_appendlong(finger_dict, gensym("extended"), finger.isExtended());
+		dictionary_appendfloat(finger_dict, gensym("length"), finger.length() * 0.001);
+		dictionary_appendfloat(finger_dict, gensym("width"), finger.width() * 0.001);
+
+		dictionary_appendfloat(finger_dict, gensym("touchDistance"), finger.touchDistance());
+		switch (finger.touchZone()) {
+			case Leap::Pointable::ZONE_NONE:
+				dictionary_appendsym(finger_dict, gensym("touchZone"), gensym("none"));
+				break;
+			case Leap::Pointable::ZONE_HOVERING:
+				dictionary_appendsym(finger_dict, gensym("touchZone"), gensym("hovering"));
+				break;
+			case Leap::Pointable::ZONE_TOUCHING:
+				dictionary_appendsym(finger_dict, gensym("touchZone"), gensym("touching"));
+				break;
+			default:
+				break;
+		}
+
+		vec = finger.direction();
+		atom_setfloat(avec+0, vec.x);
+		atom_setfloat(avec+1, vec.y);
+		atom_setfloat(avec+2, vec.z);
+		dictionary_appendatoms(finger_dict, gensym("direction"), 3, avec);
+
+		vec = finger.tipPosition();
+		atom_setfloat(avec+0, vec.x * 0.001);
+		atom_setfloat(avec+1, vec.y * 0.001);
+		atom_setfloat(avec+2, vec.z * 0.001);
+		dictionary_appendatoms(finger_dict, gensym("tipPosition"), 3, avec);
+
+		vec = finger.stabilizedTipPosition();
+		atom_setfloat(avec+0, vec.x * 0.001);
+		atom_setfloat(avec+1, vec.y * 0.001);
+		atom_setfloat(avec+2, vec.z * 0.001);
+		dictionary_appendatoms(finger_dict, gensym("stabilizedTipPosition"), 3, avec);
+
+		vec = finger.tipVelocity();
+		atom_setfloat(avec+0, vec.x * 0.001);
+		atom_setfloat(avec+1, vec.y * 0.001);
+		atom_setfloat(avec+2, vec.z * 0.001);
+		dictionary_appendatoms(finger_dict, gensym("tipVelocity"), 3, avec);
+		
+		// bones:
+		t_atom bone_atoms[4];
+		for (int b=0; b<4; b++) {
+			const Leap::Bone::Type boneType = static_cast<Leap::Bone::Type>(b);
+			const Leap::Bone bone = finger.bone(boneType);
+			t_symbol * name = 0;
+			switch (b) {
+				case 0: name = gensym("metacarpal"); break;
+				case 1: name = gensym("proximal"); break;
+				case 2: name = gensym("intermediate"); break;
+				case 3: name = gensym("distal"); break;
+				default: break;
+			}
+			
+			t_dictionary * bone_dict = processBone(bone, isRight, b, name);
+			dictionary_appendsym(bone_dict, _sym_name, name);
+			//dictionary_appenddictionary(bones_dict, name, (t_object *)bone_dict);
+			atom_setobj(bone_atoms+b, bone_dict);
+		}
+		dictionary_appendatoms(finger_dict, gensym("bones"), 4, bone_atoms);
+		
+		return finger_dict;
+	}
+	
+	t_dictionary * processTool(const Leap::Tool& tool) {
+		Quaternion q;
+		Leap::Vector vec;
+		t_atom avec[4];
+		t_dictionary * tool_dict = dictionary_new();
+		bool isValid = tool.isValid();
+		
+		dictionary_appendlong(tool_dict, gensym("valid"), isValid);
+		const int32_t id = tool.id();
+		dictionary_appendlong(tool_dict, _sym_id, id);
+		dictionary_appendlong(tool_dict, gensym("frame"), tool.frame().id());
+		dictionary_appendlong(tool_dict, gensym("hand"), tool.hand().id());
+		dictionary_appendfloat(tool_dict, gensym("timeVisible"), tool.timeVisible());
+		dictionary_appendfloat(tool_dict, gensym("length"), tool.length() * 0.001);
+		dictionary_appendfloat(tool_dict, gensym("width"), tool.width() * 0.001);
+		dictionary_appendfloat(tool_dict, gensym("touchDistance"), tool.touchDistance());
+		switch (tool.touchZone()) {
+			case Leap::Pointable::ZONE_NONE:
+				dictionary_appendsym(tool_dict, gensym("touchZone"), gensym("none"));
+				break;
+			case Leap::Pointable::ZONE_HOVERING:
+				dictionary_appendsym(tool_dict, gensym("touchZone"), gensym("hovering"));
+				break;
+			case Leap::Pointable::ZONE_TOUCHING:
+				dictionary_appendsym(tool_dict, gensym("touchZone"), gensym("touching"));
+				break;
+			default:
+				break;
+		}
+		
+		vec = tool.direction();
+		atom_setfloat(avec+0, vec.x);
+		atom_setfloat(avec+1, vec.y);
+		atom_setfloat(avec+2, vec.z);
+		dictionary_appendatoms(tool_dict, gensym("direction"), 3, avec);
+		
+		vec = tool.tipPosition();
+		atom_setfloat(avec+0, vec.x * 0.001);
+		atom_setfloat(avec+1, vec.y * 0.001);
+		atom_setfloat(avec+2, vec.z * 0.001);
+		dictionary_appendatoms(tool_dict, gensym("tipPosition"), 3, avec);
+		
+		vec = tool.stabilizedTipPosition();
+		atom_setfloat(avec+0, vec.x * 0.001);
+		atom_setfloat(avec+1, vec.y * 0.001);
+		atom_setfloat(avec+2, vec.z * 0.001);
+		dictionary_appendatoms(tool_dict, gensym("stabilizedTipPosition"), 3, avec);
+		
+		vec = tool.tipVelocity();
+		atom_setfloat(avec+0, vec.x * 0.001);
+		atom_setfloat(avec+1, vec.y * 0.001);
+		atom_setfloat(avec+2, vec.z * 0.001);
+		dictionary_appendatoms(tool_dict, gensym("tipVelocity"), 3, avec);
+		
+		return tool_dict;
+	}
+	
+	t_dictionary * processHand(const Leap::Hand& hand) {
+		t_dictionary * hand_dict = dictionary_new();
+		Quaternion q;
+		Leap::Vector vec;
+		t_atom avec[4];
+		const bool isRight = hand.isRight();
+		const int32_t hand_id = hand.id();
+		const Leap::Arm &arm = hand.arm();
+		
+		dictionary_appendlong(hand_dict, _sym_id, hand_id);
+		dictionary_appendlong(hand_dict, gensym("frame"), (t_atom_long)hand.frame().id());
+		dictionary_appendsym(hand_dict, gensym("hand"), isRight ? gensym("right") : gensym("left"));
+		dictionary_appendfloat(hand_dict, gensym("timeVisible"), hand.timeVisible());
+		dictionary_appendfloat(hand_dict, gensym("confidence"), hand.confidence());
+		dictionary_appendfloat(hand_dict, gensym("grabStrength"), hand.grabStrength()); // open hand (0) to grabbing pose (1)
+		dictionary_appendfloat(hand_dict, gensym("pinchStrength"), hand.pinchStrength()); // open hand (0) to pinching pose (1)
+		
+		t_dictionary * palm_dict = dictionary_new();
+		{
+			// palm
+			vec = hand.direction();
+			atom_setfloat(avec+0, vec.x);
+			atom_setfloat(avec+1, vec.y);
+			atom_setfloat(avec+2, vec.z);
+			dictionary_appendatoms(palm_dict, _jit_sym_direction, 3, avec);
+			
+			vec = hand.palmPosition();
+			atom_setfloat(avec+0, vec.x * 0.001);
+			atom_setfloat(avec+1, vec.y * 0.001);
+			atom_setfloat(avec+2, vec.z * 0.001);
+			dictionary_appendatoms(palm_dict, gensym("position"), 3, avec);
+			
+			vec = hand.stabilizedPalmPosition();
+			atom_setfloat(avec+0, vec.x * 0.001);
+			atom_setfloat(avec+1, vec.y * 0.001);
+			atom_setfloat(avec+2, vec.z * 0.001);
+			dictionary_appendatoms(palm_dict, gensym("stabilizedPosition"), 3, avec);
+			
+			vec = hand.palmNormal();
+			atom_setfloat(avec+0, vec.x);
+			atom_setfloat(avec+1, vec.y);
+			atom_setfloat(avec+2, vec.z);
+			dictionary_appendatoms(palm_dict, gensym("normal"), 3, avec);
+			
+			vec = hand.palmVelocity();
+			atom_setfloat(avec+0, vec.x * 0.001);
+			atom_setfloat(avec+1, vec.y * 0.001);
+			atom_setfloat(avec+2, vec.z * 0.001);
+			dictionary_appendatoms(palm_dict, gensym("velocity"), 3, avec);
+			
+			dictionary_appendfloat(palm_dict, gensym("width"), hand.palmWidth() * 0.001); // in meters
+			
+			q.fromBasis(hand.basis(), isRight);	// or basis.rigidInverse?
+			dictionary_appendatoms(palm_dict, gensym("quat"), 4, q.atoms);
+		}
+		dictionary_appenddictionary(hand_dict, gensym("palm"), (t_object *)palm_dict);
+		
+		if (arm.isValid()) {
+			t_dictionary * arm_dict = dictionary_new();
+			{
+				q.fromBasis(arm.basis(), isRight);	// or basis.rigidInverse?
+				dictionary_appendatoms(arm_dict, gensym("quat"), 4, q.atoms);
+				
+				vec = arm.center();
+				atom_setfloat(avec+0, vec.x * 0.001);
+				atom_setfloat(avec+1, vec.y * 0.001);
+				atom_setfloat(avec+2, vec.z * 0.001);
+				dictionary_appendatoms(arm_dict, gensym("center"), 3, avec);
+				
+				vec = arm.elbowPosition();
+				atom_setfloat(avec+0, vec.x * 0.001);
+				atom_setfloat(avec+1, vec.y * 0.001);
+				atom_setfloat(avec+2, vec.z * 0.001);
+				dictionary_appendatoms(arm_dict, gensym("elbowPosition"), 3, avec);
+				
+				Leap::Vector vec1 = arm.wristPosition();
+				atom_setfloat(avec+0, vec1.x * 0.001);
+				atom_setfloat(avec+1, vec1.y * 0.001);
+				atom_setfloat(avec+2, vec1.z * 0.001);
+				dictionary_appendatoms(arm_dict, gensym("wristPosition"), 3, avec);
+				
+				// probably also want length:
+				float x1 = vec1.x-vec.x;
+				float y1 = vec1.y-vec.y;
+				float z1 = vec1.z-vec.z;
+				float len = sqrtf(x1*x1+y1*y1+z1*z1);
+				
+				dictionary_appendfloat(arm_dict, gensym("length"), len * 0.001); // in meters
+				dictionary_appendfloat(arm_dict, gensym("width"), arm.width() * 0.001); // in meters
+				
+				vec = arm.direction();
+				atom_setfloat(avec+0, vec.x);
+				atom_setfloat(avec+1, vec.y);
+				atom_setfloat(avec+2, vec.z);
+				dictionary_appendatoms(arm_dict, gensym("direction"), 3, avec);
+			}
+			dictionary_appenddictionary(hand_dict, gensym("arm"), (t_object *)arm_dict);
+		}
+		
+		{
+			// transform since last frame:
+			float angle = hand.rotationAngle(lastFrame);
+			vec = hand.rotationAxis(lastFrame);
+			atom_setfloat(avec+0, angle);
+			atom_setfloat(avec+1, vec.x);
+			atom_setfloat(avec+2, vec.y);
+			atom_setfloat(avec+3, vec.z);
+			dictionary_appendatoms(hand_dict, gensym("rotation"), 4, avec);
+			dictionary_appendfloat(hand_dict, gensym("rotationProbability"), hand.rotationProbability(lastFrame));
+			dictionary_appendfloat(hand_dict, gensym("scaleFactor"), hand.scaleFactor(lastFrame));
+			dictionary_appendfloat(hand_dict, gensym("scaleProbability"), hand.scaleProbability(lastFrame));
+			
+			vec = hand.translation(lastFrame);
+			atom_setfloat(avec+0, vec.x * 0.001);
+			atom_setfloat(avec+1, vec.y * 0.001);
+			atom_setfloat(avec+2, vec.z * 0.001);
+			dictionary_appendatoms(hand_dict, gensym("translation"), 3, avec);
+			dictionary_appendfloat(hand_dict, gensym("translationProbability"), hand.translationProbability(lastFrame));
+		}
+		{
+			// sphere to fit this hand:
+			vec = hand.sphereCenter();
+			atom_setfloat(avec+0, vec.x * 0.001);
+			atom_setfloat(avec+1, vec.y * 0.001);
+			atom_setfloat(avec+2, vec.z * 0.001);
+			dictionary_appendatoms(hand_dict, gensym("sphereCenter"), 3, avec);
+			dictionary_appendfloat(hand_dict, gensym("sphereRadius"), hand.sphereRadius() * 0.001); // in meters
+		}
+		
+		// fingers:
+		const Leap::FingerList &fingers = hand.fingers();
+		t_atom finger_atoms[5];
+		for (int i=0; i<5; i++) {
+			const Leap::Finger& finger = fingers[i];
+			t_symbol * name = 0;
+			switch (i) {
+				case 0: name = gensym("thumb"); break;
+				case 1: name = gensym("index"); break;
+				case 2: name = gensym("middle"); break;
+				case 3: name = gensym("ring"); break;
+				default: name = gensym("pinky"); break;
+			}
+			t_dictionary * finger_dict = processFinger(fingers[i], isRight, 1, name);
+			atom_setobj(finger_atoms+i, finger_dict);
+		}
+		dictionary_appendatoms(hand_dict, gensym("fingers"), 5, finger_atoms);
+		
+		const Leap::ToolList& tools = hand.tools();
+		size_t numTools = tools.count();
+		if (numTools) {
+			t_atom tool_atoms[numTools];
+			for (size_t i = 0; i<numTools; i++) {
+				t_dictionary * tool_dict = processTool(tools[i]);
+				
+			}
+			dictionary_appendatoms(hand_dict, gensym("tools"), numTools, tool_atoms);
+		}
+		
+		return hand_dict;
+	}
+	
 	void processNextFrame(const Leap::Frame& frame, int serialize=0) {
+		
 		if (!frame.isValid()) return;
+		
+		dictionary_clear(frame_dict);
 		
 		t_atom a[2];
 		t_atom avec[4];
@@ -393,12 +744,20 @@ public:
 		
 		int64_t frame_id = frame.id();
 		
+		// The objects returned by the Frame object are all read-only.
+		// You can safely store them and use them in the future.
+		// They are thread-safe.
+		const Leap::HandList hands = frame.hands();
+		const Leap::PointableList pointables = frame.pointables();
+		const Leap::FingerList fingers = frame.fingers();
+		const Leap::ToolList tools = frame.tools();
+		
+		
 		// TODO: Following entities across frames
 		// perhaps have an attribute for an ID to track?
 		// hand = frame.hand(handID);
 		// finger = frame.finger(fingerID) etc.
 		
-		const Leap::HandList hands = frame.hands();
 		const size_t numHands = hands.count();
 		
 		t_atom frame_data[6];
@@ -443,311 +802,49 @@ public:
 			outlet_anything(outlet_tracking, _jit_sym_position, 3, frame_data);
 		}
 		
+		
+		t_atom hand_atoms[numHands];
 		for(size_t i = 0; i < numHands; i++) {
 			const Leap::Hand &hand = hands[i];
 			if (!hand.isValid()) continue;
 			
-			const bool isRight = hand.isRight();
-			const int32_t hand_id = hand.id();
-			const Leap::Arm &arm = hand.arm();
+			t_dictionary * hand_dict = processHand(hand);
 			
-			dictionary_appendlong(hand_dict, _sym_id, hand_id);
-			dictionary_appendlong(hand_dict, gensym("frame"), frame_id);
-			dictionary_appendsym(hand_dict, gensym("hand"), isRight ? gensym("right") : gensym("left"));
-			dictionary_appendfloat(hand_dict, gensym("timeVisible"), hand.timeVisible());
-			dictionary_appendfloat(hand_dict, gensym("confidence"), hand.confidence());
-			dictionary_appendfloat(hand_dict, gensym("grabStrength"), hand.grabStrength()); // open hand (0) to grabbing pose (1)
-			dictionary_appendfloat(hand_dict, gensym("pinchStrength"), hand.pinchStrength()); // open hand (0) to pinching pose (1)
-			
-			// palm
-			vec = hand.direction();
-			atom_setfloat(avec+0, vec.x);
-			atom_setfloat(avec+1, vec.y);
-			atom_setfloat(avec+2, vec.z);
-			dictionary_appendatoms(palm_dict, _jit_sym_direction, 3, avec);
-			
-			vec = hand.palmPosition();
-			atom_setfloat(avec+0, vec.x * 0.001);
-			atom_setfloat(avec+1, vec.y * 0.001);
-			atom_setfloat(avec+2, vec.z * 0.001);
-			dictionary_appendatoms(palm_dict, gensym("position"), 3, avec);
-			
-			vec = hand.stabilizedPalmPosition();
-			atom_setfloat(avec+0, vec.x * 0.001);
-			atom_setfloat(avec+1, vec.y * 0.001);
-			atom_setfloat(avec+2, vec.z * 0.001);
-			dictionary_appendatoms(palm_dict, gensym("stabilizedPosition"), 3, avec);
-			
-			vec = hand.palmNormal();
-			atom_setfloat(avec+0, vec.x);
-			atom_setfloat(avec+1, vec.y);
-			atom_setfloat(avec+2, vec.z);
-			dictionary_appendatoms(palm_dict, gensym("normal"), 3, avec);
-			
-			vec = hand.palmVelocity();
-			atom_setfloat(avec+0, vec.x * 0.001);
-			atom_setfloat(avec+1, vec.y * 0.001);
-			atom_setfloat(avec+2, vec.z * 0.001);
-			dictionary_appendatoms(palm_dict, gensym("velocity"), 3, avec);
-			
-			dictionary_appendfloat(palm_dict, gensym("width"), hand.palmWidth() * 0.001); // in meters
-			
-			q.fromBasis(hand.basis(), isRight);	// or basis.rigidInverse?
-			dictionary_appendatoms(palm_dict, gensym("quat"), 4, q.atoms);
-			
-			// transform since last frame:
-			float angle = hand.rotationAngle(lastFrame);
-			vec = hand.rotationAxis(lastFrame);
-			atom_setfloat(avec+0, angle);
-			atom_setfloat(avec+1, vec.x);
-			atom_setfloat(avec+2, vec.y);
-			atom_setfloat(avec+3, vec.z);
-			dictionary_appendatoms(hand_dict, gensym("rotation"), 4, avec);
-			dictionary_appendfloat(hand_dict, gensym("rotationProbability"), hand.rotationProbability(lastFrame));
-			dictionary_appendfloat(hand_dict, gensym("scaleFactor"), hand.scaleFactor(lastFrame));
-			dictionary_appendfloat(hand_dict, gensym("scaleProbability"), hand.scaleProbability(lastFrame));
-			
-			vec = hand.translation(lastFrame);
-			atom_setfloat(avec+0, vec.x * 0.001);
-			atom_setfloat(avec+1, vec.y * 0.001);
-			atom_setfloat(avec+2, vec.z * 0.001);
-			dictionary_appendatoms(hand_dict, gensym("translation"), 3, avec);
-			dictionary_appendfloat(hand_dict, gensym("translationProbability"), hand.translationProbability(lastFrame));
-			
-			// sphere to fit this hand:
-			vec = hand.sphereCenter();
-			atom_setfloat(avec+0, vec.x * 0.001);
-			atom_setfloat(avec+1, vec.y * 0.001);
-			atom_setfloat(avec+2, vec.z * 0.001);
-			dictionary_appendatoms(hand_dict, gensym("sphereCenter"), 3, avec);
-			dictionary_appendfloat(hand_dict, gensym("sphereRadius"), hand.sphereRadius() * 0.001); // in meters
-			
-			
-			
-			
-			dictionary_appendlong(arm_dict, gensym("valid"), arm.isValid());
-			if (arm.isValid()) {
-				q.fromBasis(arm.basis(), isRight);	// or basis.rigidInverse?
-				dictionary_appendatoms(arm_dict, gensym("quat"), 4, q.atoms);
-				
-				vec = arm.center();
-				atom_setfloat(avec+0, vec.x * 0.001);
-				atom_setfloat(avec+1, vec.y * 0.001);
-				atom_setfloat(avec+2, vec.z * 0.001);
-				dictionary_appendatoms(arm_dict, gensym("center"), 3, avec);
-				
-				vec = arm.elbowPosition();
-				atom_setfloat(avec+0, vec.x * 0.001);
-				atom_setfloat(avec+1, vec.y * 0.001);
-				atom_setfloat(avec+2, vec.z * 0.001);
-				dictionary_appendatoms(arm_dict, gensym("elbowPosition"), 3, avec);
-				
-				Leap::Vector vec1 = arm.wristPosition();
-				atom_setfloat(avec+0, vec1.x * 0.001);
-				atom_setfloat(avec+1, vec1.y * 0.001);
-				atom_setfloat(avec+2, vec1.z * 0.001);
-				dictionary_appendatoms(arm_dict, gensym("wristPosition"), 3, avec);
-				
-				// probably also want length:
-				float x1 = vec1.x-vec.x;
-				float y1 = vec1.y-vec.y;
-				float z1 = vec1.z-vec.z;
-				float len = sqrtf(x1*x1+y1*y1+z1*z1);
-				
-				dictionary_appendfloat(arm_dict, gensym("length"), len * 0.001); // in meters
-				dictionary_appendfloat(arm_dict, gensym("width"), arm.width() * 0.001); // in meters
-				
-				vec = arm.direction();
-				atom_setfloat(avec+0, vec.x);
-				atom_setfloat(avec+1, vec.y);
-				atom_setfloat(avec+2, vec.z);
-				dictionary_appendatoms(arm_dict, gensym("direction"), 3, avec);
-			}
-//			
-//			
-//			const Leap::FingerList &fingers = hand.fingers();
-//			for (Leap::FingerList::const_iterator fl = fingers.begin(); fl != fingers.end(); fl++) {
-//				const Leap::Finger& finger = *fl;
-//				int idx = (int)finger.type();
-//				if (idx < 0 || idx > 5) continue;
-//				
-//				t_dictionary * finger_dict = finger_dicts[idx];
-//				bool isValid = finger.isValid();
-//				
-//				dictionary_appendlong(finger_dict, gensym("valid"), isValid);
-//				if (!isValid) continue;
-//				
-//				const int32_t id = finger.id();
-//				
-//				dictionary_appendlong(finger_dict, _sym_id, id);
-//				dictionary_appendlong(finger_dict, gensym("frame"), frame_id);
-//				dictionary_appendlong(finger_dict, gensym("hand"), hand_id);
-//				dictionary_appendlong(finger_dict, gensym("extended"), finger.isExtended());
-//				
-//				
-//				dictionary_appendfloat(finger_dict, gensym("length"), finger.length() * 0.001);
-//				dictionary_appendfloat(finger_dict, gensym("width"), finger.width() * 0.001);
-//				
-//				dictionary_appendfloat(finger_dict, gensym("touchDistance"), finger.touchDistance());
-//				switch (finger.touchZone()) {
-//					case Leap::Pointable::ZONE_NONE:
-//						dictionary_appendsym(finger_dict, gensym("touchZone"), gensym("none"));
-//						break;
-//					case Leap::Pointable::ZONE_HOVERING:
-//						dictionary_appendsym(finger_dict, gensym("touchZone"), gensym("hovering"));
-//						break;
-//					case Leap::Pointable::ZONE_TOUCHING:
-//						dictionary_appendsym(finger_dict, gensym("touchZone"), gensym("touching"));
-//						break;
-//					default:
-//						break;
-//				}
-//				
-//				//dictionary_appendlong(finger_dict, gensym("type"), (long)finger.type());
-//				switch (finger.type()) {
-//					case Leap::Finger::TYPE_THUMB:
-//						dictionary_appendsym(finger_dict, _sym_type, gensym("thumb"));
-//						break;
-//					case Leap::Finger::TYPE_INDEX:
-//						dictionary_appendsym(finger_dict, _sym_type, gensym("index"));
-//						break;
-//					case Leap::Finger::TYPE_MIDDLE:
-//						dictionary_appendsym(finger_dict, _sym_type, gensym("middle"));
-//						break;
-//					case Leap::Finger::TYPE_RING:
-//						dictionary_appendsym(finger_dict, _sym_type, gensym("ring"));
-//						break;
-//					case Leap::Finger::TYPE_PINKY:
-//						dictionary_appendsym(finger_dict, _sym_type, gensym("pinky"));
-//						break;
-//					default:
-//						break;
-//				}
-//				
-//				vec = finger.direction();
-//				atom_setfloat(avec+0, vec.x);
-//				atom_setfloat(avec+1, vec.y);
-//				atom_setfloat(avec+2, vec.z);
-//				dictionary_appendatoms(finger_dict, gensym("direction"), 3, avec);
-//				
-//				vec = finger.tipPosition();
-//				atom_setfloat(avec+0, vec.x * 0.001);
-//				atom_setfloat(avec+1, vec.y * 0.001);
-//				atom_setfloat(avec+2, vec.z * 0.001);
-//				dictionary_appendatoms(finger_dict, gensym("tipPosition"), 3, avec);
-//				
-//				vec = finger.stabilizedTipPosition();
-//				atom_setfloat(avec+0, vec.x * 0.001);
-//				atom_setfloat(avec+1, vec.y * 0.001);
-//				atom_setfloat(avec+2, vec.z * 0.001);
-//				dictionary_appendatoms(finger_dict, gensym("stabilizedTipPosition"), 3, avec);
-//				
-//				vec = finger.tipVelocity();
-//				atom_setfloat(avec+0, vec.x * 0.001);
-//				atom_setfloat(avec+1, vec.y * 0.001);
-//				atom_setfloat(avec+2, vec.z * 0.001);
-//				dictionary_appendatoms(finger_dict, gensym("tipVelocity"), 3, avec);
-//				
-////				
-////				Leap::Bone bone;
-////				Leap::Bone::Type boneType;
-////				for(int b = 0; b < 4; b++) {
-////					boneType = static_cast<Leap::Bone::Type>(b);
-////					bone = (*fl).bone(boneType);
-////					
-////					// TODO
-////					t_dictionary * bone_dict = bone_dicts[idx][b];
-////					
-////					bool isValid = bone.isValid();
-////					dictionary_appendlong(bone_dict, gensym("valid"), isValid);
-////					dictionary_appendlong(bone_dict, gensym("type"), (int)bone.type());
-////					if (!isValid) continue;
-////					
-////					dictionary_appendfloat(bone_dict, gensym("length"), bone.length() * 0.001);
-////					dictionary_appendfloat(bone_dict, gensym("width"), bone.width() * 0.001);
-////					
-////					q.fromBasis(bone.basis(), isRight);	// or basis.rigidInverse?
-////					dictionary_appendatoms(bone_dict, gensym("quat"), 4, q.atoms);
-////					
-////					vec = bone.center();
-////					atom_setfloat(avec+0, vec.x * 0.001);
-////					atom_setfloat(avec+1, vec.y * 0.001);
-////					atom_setfloat(avec+2, vec.z * 0.001);
-////					dictionary_appendatoms(bone_dict, gensym("center"), 3, avec);
-////					vec = bone.nextJoint();
-////					atom_setfloat(avec+0, vec.x * 0.001);
-////					atom_setfloat(avec+1, vec.y * 0.001);
-////					atom_setfloat(avec+2, vec.z * 0.001);
-////					dictionary_appendatoms(bone_dict, gensym("nextJoint"), 3, avec);
-////					vec = bone.prevJoint();
-////					atom_setfloat(avec+0, vec.x * 0.001);
-////					atom_setfloat(avec+1, vec.y * 0.001);
-////					atom_setfloat(avec+2, vec.z * 0.001);
-////					dictionary_appendatoms(bone_dict, gensym("prevJoint"), 3, avec);
-////					vec = bone.direction();
-////					atom_setfloat(avec+0, vec.x);
-////					atom_setfloat(avec+1, vec.y);
-////					atom_setfloat(avec+2, vec.z);
-////					dictionary_appendatoms(bone_dict, gensym("direction"), 3, avec);
-////					
-////				}
-//				
-//				
-//			}
-			
-//			
-//			// TODO: v2 additions:
-//			// digits
-//			// bone orientation / position
-//			// finger extension
-//			
-//			for(size_t j = 0; j < 5; j++) {
-//				// Finger
-//				const Leap::Finger &finger = fingers[j];
-//				const Leap::Finger::Type fingerType = finger.type(); // 0=THUMB ... 4=PINKY
-//				const int32_t finger_id = finger.id();
-//				//const Leap::Ray& tip = finger.tip();
-//				const Leap::Vector direction = finger.direction();
-//				const Leap::Vector position = finger.tipPosition();
-//				const Leap::Vector velocity = finger.tipVelocity();
-//				const double width = finger.width();
-//				const double lenght = finger.length();
-//				const bool isTool = finger.isTool();
-//				
-//				// getting individual bones:
-//				// finger.bone(Bone::Type boneIdx)
-//				// @see https://developer.leapmotion.com/documentation/cpp/api/Leap.Bone.html#cppclass_leap_1_1_bone
-//				// bone has basis, center, direction, isValid, length, type, width, etc.
-//				
-//				t_atom finger_data[15];
-//				atom_setlong(finger_data, finger_id);
-//				atom_setlong(finger_data+1, hand_id);
-//				atom_setlong(finger_data+2, frame_id);
-//				atom_setfloat(finger_data+3, position.x);
-//				atom_setfloat(finger_data+4, position.y);
-//				atom_setfloat(finger_data+5, position.z);
-//				atom_setfloat(finger_data+6, direction.x);
-//				atom_setfloat(finger_data+7, direction.y);
-//				atom_setfloat(finger_data+8, direction.z);
-//				atom_setfloat(finger_data+9, velocity.x);
-//				atom_setfloat(finger_data+10, velocity.y);
-//				atom_setfloat(finger_data+11, velocity.z);
-//				atom_setfloat(finger_data+12, width);
-//				atom_setfloat(finger_data+13, lenght);
-//				atom_setlong(finger_data+14, isTool);
-//				outlet_anything(outlet_frame, ps_finger, 15, finger_data);
-//			}
-			const Leap::PointableList& pointables = frame.pointables();
-			const Leap::ToolList& tools = frame.tools();
-			
-			atom_setsym(a, hand_dict_name);
+			t_symbol * name = jit_symbol_unique();
+			hand_dict = dictobj_register(hand_dict, &name);
+			atom_setsym(a, name);
 			outlet_anything(outlet_hands, _sym_dictionary, 1, a);
+			object_release((t_object *)hand_dict);
 		}
+		//dictionary_appendatoms()
 		
-		//	frame.tools().count()
-		// frame.interactionBox()
 		
 		outlet_anything(outlet_frame, ps_frame_end, 0, NULL);
+	}
+	
+	void getBox() {
+		t_atom avec[4];
+		t_atom a[1];
+		Leap::Vector vec;
+		const Leap::InteractionBox& box = frame.interactionBox();
+		t_symbol * box_dict_name = jit_symbol_unique();
+		t_dictionary * box_dict = dictobj_register(dictionary_new(), &box_dict_name);
+		
+		vec = box.center();
+		atom_setfloat(avec+0, vec.x * 0.001);
+		atom_setfloat(avec+1, vec.y * 0.001);
+		atom_setfloat(avec+2, vec.z * 0.001);
+		dictionary_appendatoms(box_dict, gensym("center"), 3, avec);
+		
+		vec = box.center();
+		atom_setfloat(avec+0, box.width() * 0.001);
+		atom_setfloat(avec+1, box.height() * 0.001);
+		atom_setfloat(avec+2, box.depth() * 0.001);
+		dictionary_appendatoms(box_dict, gensym("size"), 3, avec);
+		
+		atom_setsym(a, box_dict_name);
+		outlet_anything(outlet_msg, gensym("interactionBox"), 1, a);
+		object_release((t_object *)box_dict);
 	}
 	
 	// compatibilty with aka.leapmotion:
@@ -1143,6 +1240,7 @@ public:
 		}
 		
 		frame.deserialize(in_bp->data, in_bp->length);
+		//frame.deserialize(in_bp->data, in_bp->length);
 		if (aka) {
 			processNextFrameAKA(frame);
 		} else {
@@ -1184,6 +1282,10 @@ public:
 
 void leap_bang(t_leap * x) {
     x->bang();
+}
+
+void leap_getbox(t_leap * x) {
+	x->getBox();
 }
 
 void leap_jit_matrix(t_leap *x, t_symbol * s) {
@@ -1336,6 +1438,7 @@ int C74_EXPORT main(void) {
 
 	class_addmethod(maxclass, (method)leap_jit_matrix, "jit_matrix", A_SYM, 0);
 	class_addmethod(maxclass, (method)leap_bang, "bang", 0);
+	class_addmethod(maxclass, (method)leap_bang, "getbox", 0);
 	class_addmethod(maxclass, (method)leap_configure, "configure", 0);
 
 	CLASS_ATTR_SYM(maxclass, "config", 0, t_leap, config);
