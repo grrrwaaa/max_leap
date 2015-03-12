@@ -40,6 +40,7 @@
       debugDocumentVersioning = "YES"
       allowLocationSimulation = "YES">
       <PathRunnable
+         runnableDebuggingMode = "0"
          FilePath = "/Users/grrrwaaa/c74/sysbuild_i386 x86_64/Development/Max.app">
       </PathRunnable>
       <MacroExpansion>

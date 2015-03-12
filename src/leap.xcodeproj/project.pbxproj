@@ -9,14 +9,12 @@
 /* Begin PBXBuildFile section */
 		22CF11AE0EE9A8840054F513 /* leap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 22CF11AD0EE9A8840054F513 /* leap.cpp */; };
 		36C85BC31936D4CB004516FF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36C85BC21936D4CB004516FF /* IOKit.framework */; };
-		36C85D471936D511004516FF /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36C85D461936D511004516FF /* CoreGraphics.framework */; };
 		36D628CA191380BA003BCA28 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36D628C9191380BA003BCA28 /* OpenGL.framework */; };
 		36D628CC191380DD003BCA28 /* JitterAPI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36D628CB191380DD003BCA28 /* JitterAPI.framework */; };
 		36D628E3191381DA003BCA28 /* commonsyms.c in Sources */ = {isa = PBXBuildFile; fileRef = 36D628E2191381DA003BCA28 /* commonsyms.c */; };
 		36D6293B1913853E003BCA28 /* MaxAudioAPI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36D6293A1913853E003BCA28 /* MaxAudioAPI.framework */; };
 		36EA83D91913981100441CD7 /* CoreFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 36EA83D81913981100441CD7 /* CoreFoundation.framework */; };
 		8920A59B1A72DD4800228C7E /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8920A59A1A72DD4800228C7E /* Cocoa.framework */; };
-		8932A6091AA587B0004307EE /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = 8932A6081AA587B0004307EE /* README.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,7 +43,6 @@
 				36D6293B1913853E003BCA28 /* MaxAudioAPI.framework in Frameworks */,
 				36EA83D91913981100441CD7 /* CoreFoundation.framework in Frameworks */,
 				36C85BC31936D4CB004516FF /* IOKit.framework in Frameworks */,
-				36C85D471936D511004516FF /* CoreGraphics.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -176,7 +173,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8932A6091AA587B0004307EE /* README.md in Sources */,
 				22CF11AE0EE9A8840054F513 /* leap.cpp in Sources */,
 				36D628E3191381DA003BCA28 /* commonsyms.c in Sources */,
 			);
@@ -189,6 +185,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				SDKROOT = macosx10.7;
 			};
 			name = Development;
 		};
@@ -196,6 +193,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				SDKROOT = macosx10.7;
 			};
 			name = Deployment;
 		};
@@ -228,7 +226,6 @@
 					"-lleap",
 				);
 				PRODUCT_NAME = leap;
-				SDKROOT = macosx10.8;
 			};
 			name = Development;
 		};
@@ -260,7 +257,6 @@
 					"-lleap",
 				);
 				PRODUCT_NAME = leap;
-				SDKROOT = macosx10.8;
 			};
 			name = Deployment;
 		};

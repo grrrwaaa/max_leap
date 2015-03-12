@@ -13,15 +13,17 @@ Working:
 - @hmd for the LeapVR optimization
 - Gesture recognition (circle, swipe, key & screen taps)
 - Frame serialization/deserialization (example via jit.matrixset)
-- Backwards-compatibility with [aka.leapmotion] via @aka 1 
+- Hands, arm, palm etc. output as dict
+- Backwards-compatibility option with [aka.leapmotion] via @aka 1 
 
 Work-in-progress: 
 - Visualizer (wip)
-- Bones, palm, wrist, arm (wip)
+- Bones (wip)
 - IR image warp/rectification for e.g. see-through AR (wip)
 - Motion tracking between frames (wip)
 - Grip / pinch (wip)
 - Tools (wip) 
+- Filter output dicts for speed (e.g. turn off capturing fingers if not needed)?
 
 New project, many things may still change (including object name!)
 
