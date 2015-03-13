@@ -150,7 +150,11 @@ public:
 	// matrices for the IR images:
 	void *		image_wrappers[2];
 	void *		image_mats[2];
+	void *		distortion_image_wrappers[2];
+	void *		distortion_image_mats[2];
+	int			distortion_dim[2];
 	int			image_width, image_height;
+	int			distortion_requested;
 	
 	Leap::Controller controller;
 	LeapListener listener;
@@ -165,8 +169,8 @@ public:
 		outlet_msg = outlet_new(&ob, 0);
 		outlet_tracking = outlet_new(&ob, 0);
 		outlet_gesture = outlet_new(&ob, 0);
-		outlet_fingers = outlet_new(&ob, "t_dictionary");
-		outlet_hands = outlet_new(&ob, "t_dictionary");
+		outlet_fingers = outlet_new(&ob, "dictionary");
+		outlet_hands = outlet_new(&ob, "dictionary");
 		outlet_image[0] = outlet_new(&ob, "jit_matrix");
 		outlet_image[1] = outlet_new(&ob, "jit_matrix");
         outlet_frame = outlet_new(&ob, 0);
@@ -194,7 +198,6 @@ public:
 		
 		frame_dict_name = jit_symbol_unique();
 		frame_dict = dictobj_register(dictionary_new(), &frame_dict_name);
-		
 		
 		hand_dict_name = jit_symbol_unique();
 		hand_dict = dictobj_register(dictionary_new(), &hand_dict_name);
@@ -240,13 +243,19 @@ public:
 
 		
 		// create jit.matrix for the output images:
-		image_width = 640;
-		image_height = 240;
+		image_width = 0;
+		image_height = 0;
+		distortion_dim[0] = 0;
+		distortion_dim[1] = 0;
 		for (int i=0; i<2; i++) {
 			// create matrix:
 			image_wrappers[i] = jit_object_new(gensym("jit_matrix_wrapper"), jit_symbol_unique(), 0, NULL);
-			image_mats[i] = configureMatrix2D(image_wrappers[i], 1, _jit_sym_char, image_width, image_height);
+			image_mats[i] = NULL;
+			
+			distortion_image_wrappers[i] = jit_object_new(gensym("jit_matrix_wrapper"), jit_symbol_unique(), 0, NULL);
+			distortion_image_mats[i] = NULL;
 		}
+		distortion_requested = 1;
 		
 		// internal:
 		lastFrameID = 0;
@@ -954,55 +963,107 @@ public:
 	}
 	
 	void processImageList(const Leap::ImageList& images) {
-		t_atom a[1];
+		t_atom a[3];
+		long in_savelock;
+		
+		// sanity checks:
 		if (images.count() < 2) return;
-		for(int i = 0; i < 2; i++){
-			Leap::Image image = images[i];
-			if (image.isValid()) {
+		
+		// (re)allocate matrices:
+		{
+			const Leap::Image& image = images[0];
+			if (!image.isValid()) return;
+			
+			if (image.width() != image_width || image.height() != image_height) {
+				image_height = image.height();
+				image_width = image.width();
+				for (int i=0; i<2; i++) {
+					//image_wrappers[i] = jit_object_new(gensym("jit_matrix_wrapper"), jit_symbol_unique(), 0, NULL);
+					image_mats[i] = configureMatrix2D(image_wrappers[i], 1, _jit_sym_char, image_width, image_height);
+				}
+				object_post(&ob, "IR image dimensions: width %i height %i", image_width, image_height);
 				
+			}
+			
+			if (image.distortionWidth()/2 != distortion_dim[0] || image.distortionHeight() != distortion_dim[1]) {
+				distortion_dim[0] = image.distortionWidth()/2;
+				distortion_dim[1] = image.distortionHeight();
+				
+				for (int i=0; i<2; i++) {
+					//distortion_image_wrappers[i] = jit_object_new(gensym("jit_matrix_wrapper"), jit_symbol_unique(), 0, NULL);
+					distortion_image_mats[i] = configureMatrix2D(distortion_image_wrappers[i], 2, _jit_sym_float32, distortion_dim[0], distortion_dim[1]);
+				}
+				object_post(&ob, "IR calibration image dimensions: width %i height %i", distortion_dim[0], distortion_dim[1]);
+			}
+		}
+	
+		for(int i = 0; i < 2; i++){
+			const Leap::Image& image = images[i];
+			if (image.isValid()) {
 				//int64_t id = image.sequenceId(); // like frame.id(); can be used for unique/allframes etc.
 				int idx = image.id();
 				
-				void * mat_wrapper = image_wrappers[idx];
-				void * mat = image_mats[idx];
-				
-				// std::string toString()
-				//A string containing a brief, human readable description of the Image object.
-				
-				// sanity checks:
-				// not sure if this ever happens, but just in case:
-				if (image.width() != image_width || image.height() != image_height) {
-					image_mats[i] = configureMatrix2D(image_wrappers[i], 1, _jit_sym_char, image_width, image_height);
-				}
 				if (image.bytesPerPixel() != 1) {
 					post("Leap SDK has changed the image format, so the max object will need to be recompiled...");
 					return;
 				}
 				
-				// copy into image:
-				char * out_bp;
-				jit_object_method(mat, _jit_sym_getdata, &out_bp);
-				memcpy(out_bp, image.data(), image.bytesPerPixel()*image.width()*image.height());
+				void * mat_wrapper = image_wrappers[idx];
+				void * mat = image_mats[idx];
+				
+				// lock it:
+				in_savelock = (long)jit_object_method(mat, _jit_sym_lock, 1);
+				{
+					// copy into image:
+					char * out_bp;
+					jit_object_method(mat, _jit_sym_getdata, &out_bp);
+					memcpy(out_bp, image.data(), image_width*image_height);
+				}
+				// restore matrix lock state:
+				jit_object_method(mat, _jit_sym_lock, in_savelock);
 				
 				// output image:
 				atom_setsym(a, jit_attr_getsym(mat_wrapper, _jit_sym_name));
 				outlet_anything(outlet_image[idx], _jit_sym_jit_matrix, 1, a);
 				
+				if (distortion_requested) {
+					void * mat_wrapper = distortion_image_wrappers[idx];
+					void * mat = distortion_image_mats[idx];
+					
+					// lock it:
+					in_savelock = (long)jit_object_method(mat, _jit_sym_lock, 1);
+					{
+						// copy into image:
+						char * out_bp;
+						jit_object_method(mat, _jit_sym_getdata, &out_bp);
+						memcpy(out_bp, image.distortion(), 2*sizeof(float)*distortion_dim[0]*distortion_dim[1]);
+					
+//						for (int d = 0; d < distortion_dim[0] * distortion_dim[1]; d += 2) {
+//							float dX = distortion_buffer[d];
+//							float dY = distortion_buffer[d + 1];
+//							if(!((dX < 0) || (dX > 1)) && !((dY < 0) || (dY > 1))) {
+//								//Use valid calibration data
+//							}
+//						}
+					}
+					// restore matrix lock state:
+					jit_object_method(mat, _jit_sym_lock, in_savelock);
+					
+					// output image:
+					atom_setlong(a, idx);
+					atom_setsym(a+1, _jit_sym_jit_matrix);
+					atom_setsym(a+2, jit_attr_getsym(mat_wrapper, _jit_sym_name));
+					outlet_anything(outlet_msg, gensym("distortion"), 3, a);
+					
+				}
+				
 				/*
 				 see https://developer.leapmotion.com/documentation/cpp/api/Leap.Image.html#cppclass_leap_1_1_image_1a4c6fa722eba7018e148b13677c7ce609
 				 */
-				// image.distortionHeight(), image.distortionWidth();
-				// Since each point on the 64x64 element distortion map has two values in the buffer, the stride is 2 times the size of the grid. (Stride is currently fixed at 2 * 64 = 128).
-				//const float* distortion_buffer = image.distortion();
-				
-				// see https://developer.leapmotion.com/documentation/cpp/api/Leap.Image.html#cppclass_leap_1_1_image_1a362c8bbd9e27224f9c0d0eeb6962ccf5
-				// image.rayOffsetX, rayOffsetY() //Used to convert between normalized coordinates in the range [0..1] and the ray slope range [-4..4].
-				// image.rectify():  Given a point on the image, rectify() corrects for camera distortion and returns the true direction from the camera to the source of that image point within the Leap Motion field of view.
-				// image.warp()
-				// Provides the point in the image corresponding to a ray projecting from the camera.
-				// warp() is typically not fast enough for realtime distortion correction. For better performance, use a shader program exectued on a GPU.
 			}
 		}
+		
+		distortion_requested = 0;
 	}
 	
 	void processGestures(const Leap::Frame& frame) {
@@ -1288,6 +1349,10 @@ void leap_getbox(t_leap * x) {
 	x->getBox();
 }
 
+void leap_getdistortion(t_leap * x) {
+	x->distortion_requested = 1;
+}
+
 void leap_jit_matrix(t_leap *x, t_symbol * s) {
 	x->jit_matrix(s);
 }
@@ -1439,6 +1504,7 @@ int C74_EXPORT main(void) {
 	class_addmethod(maxclass, (method)leap_jit_matrix, "jit_matrix", A_SYM, 0);
 	class_addmethod(maxclass, (method)leap_bang, "bang", 0);
 	class_addmethod(maxclass, (method)leap_bang, "getbox", 0);
+	class_addmethod(maxclass, (method)leap_getdistortion, "getdistortion", 0);
 	class_addmethod(maxclass, (method)leap_configure, "configure", 0);
 
 	CLASS_ATTR_SYM(maxclass, "config", 0, t_leap, config);

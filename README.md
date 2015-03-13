@@ -9,6 +9,7 @@ New project, many things may still change (including object name!)
 Working:
 - Connection status, FPS
 - IR images
+- IR warp calibration images
 - Hands (palm, arm)
 - Fingers (bones)
 - Tools
@@ -21,11 +22,16 @@ Working:
 - Frame serialization/deserialization (example via jit.matrixset)
 - Backwards-compatibility option with [aka.leapmotion] via @aka 1 
 
-Work-in-progress: 
+Work-in-progress:
+- Fix basis-to-quat conversion, seems odd
+- Option to export bones as matrices (for e.g. jit.gl.multiple or jit.gl.mesh)
 - Visualizer (wip)
-- IR image warp/rectification for e.g. see-through AR (wip)
+- IR image warp/rectification shader, e.g. see-through AR (wip)
+	- method to dump calibration matrices (texcoords as 2 float32 64 64)
+		- image.distortion() is [2 float32 image.distortionWidth() image.distortionHeight()] (64x64)
 - Motion tracking between frames (wip)
 - Filter output dicts for speed (e.g. turn off capturing fingers if not needed)?
+- Example hooking up to a rigged hand model
 
 ## Notes on use
 
